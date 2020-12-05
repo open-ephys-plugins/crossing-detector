@@ -4,7 +4,7 @@ This plugin for the [Open Ephys GUI](https://github.com/open-ephys/plugin-GUI) f
 
 Cite this code using the DOI above!
 
-<img src="cd2.0_front.png" width="250" /> <img src="cd2.3_settings.png" width="400" />
+<img src="Resources/cd2.0_front.png" width="250" /> <img src="Resources/cd2.3_settings.png" width="400" />
 
 ## Settings:
 
@@ -39,7 +39,7 @@ This plugin can now be built outside of the main GUI file tree using CMake. In o
 
 You should use this branch if you are already using CMake to build the *main GUI* (in development as of writing). Otherwise, use the `master` branch.
 
-See `CrossingDetector/CMAKE_README.txt` and/or the wiki page [here](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/1259110401/Plugin+CMake+Builds) for build instructions.
+See `CMAKE_README.txt` and/or the wiki page [here](https://open-ephys.atlassian.net/wiki/spaces/OEW/pages/1259110401/Plugin+CMake+Builds) for build instructions.
 
 \* If you have the GUI built somewhere else, you can specify its location by setting the environment variable `GUI_BASE_DIR` or defining it when calling cmake with the option `-DGUI_BASE_DIR=<location>`.
 
