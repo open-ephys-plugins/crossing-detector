@@ -417,9 +417,8 @@ void CrossingDetector::setParameter(int parameterIndex, float newValue)
         static_cast<CrossingDetectorEditor*>(getEditor())->updateChannelThreshBox();
 
         // update signal chain, since the event channel metadata has to get updated.
-        // pass nullptr instead of a pointer to the editor so that it just updates
-        // settings and doesn't try to update the visible editors.
-        CoreServices::updateSignalChain(nullptr);
+        CoreServices::updateSignalChain(getEditor());
+
         break;
 
     case EVENT_CHAN:
