@@ -50,7 +50,7 @@ CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode, boo
     addAndMakeVisible(outputLabel);
 
     outputBox = new ComboBox("Out event channel");
-    for (int chan = 1; chan <= 8; chan++)
+    for (int chan = 1; chan <= 16; chan++)
         outputBox->addItem(String(chan), chan);
     outputBox->setSelectedId(processor->eventChannel + 1);
     outputBox->setBounds(xPos += 45, yPos, 40, TEXT_HT);
