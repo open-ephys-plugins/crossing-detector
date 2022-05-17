@@ -53,14 +53,14 @@ public:
     bool hasEditor() const { return true; }
     AudioProcessorEditor* createEditor() override;
 
-    void createEventChannels() override;
+    void updateSettings() override;
 
     void process(AudioSampleBuffer& continuousBuffer) override;
 
     void setParameter(int parameterIndex, float newValue) override;
 
-    bool enable() override;
-    bool disable() override;
+    bool startAcquisition() override;
+    bool stopAcquisition() override;
 
 private:
     enum ThresholdType { CONSTANT, RANDOM, CHANNEL, ADAPTIVE };
@@ -108,8 +108,7 @@ private:
     /* Use events created by the phase calculator to adapt threshold, if the threshold
      * mode is adaptive.
      */
-    void handleEvent(const EventChannel* eventInfo, const MidiMessage& event,
-        int samplePosition = 0) override;
+    void handleTTLEvent(TTLEventPtr event) override;
 
     // Restart the learning rate decaying process (updating start and min learning rates to match UI)
     void restartAdaptiveThreshold();
@@ -258,7 +257,7 @@ private:
     Array<float> currThresholds;
 
     EventChannel* eventChannelPtr;
-    MetaDataDescriptorArray eventMetaDataDescriptors;
+    MetadataDescriptorArray eventMetadataDescriptors;
     TTLEventPtr turnoffEvent; // holds a turnoff event that must be added in a later buffer
 
     Value thresholdVal; // underlying value of the threshold label

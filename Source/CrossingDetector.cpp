@@ -67,8 +67,6 @@ CrossingDetector::CrossingDetector()
     , eventChannelPtr       (nullptr)
     , turnoffEvent          (nullptr)
 {
-    setProcessorType(PROCESSOR_TYPE_FILTER);
-
     indicatorRange[0] = -180.0f;
     indicatorRange[1] = 180.0f;
     adaptThreshRange[0] = -180.0f;
@@ -78,15 +76,15 @@ CrossingDetector::CrossingDetector()
     thresholdVal = constantThresh;
 
     // make the event-related metadata descriptors
-    eventMetaDataDescriptors.add(new MetaDataDescriptor(MetaDataDescriptor::INT64, 1, "Crossing Point",
+    eventMetadataDescriptors.add(new MetadataDescriptor(MetadataDescriptor::INT64, 1, "Crossing Point",
         "Time when threshold was crossed", "crossing.point"));
-    eventMetaDataDescriptors.add(new MetaDataDescriptor(MetaDataDescriptor::FLOAT, 1, "Crossing level",
+    eventMetadataDescriptors.add(new MetadataDescriptor(MetadataDescriptor::FLOAT, 1, "Crossing level",
         "Voltage level at first sample after crossing", "crossing.level"));
-    eventMetaDataDescriptors.add(new MetaDataDescriptor(MetaDataDescriptor::FLOAT, 1, "Threshold",
+    eventMetadataDescriptors.add(new MetadataDescriptor(MetadataDescriptor::FLOAT, 1, "Threshold",
         "Monitored voltage threshold", "crossing.threshold"));
-    eventMetaDataDescriptors.add(new MetaDataDescriptor(MetaDataDescriptor::UINT8, 1, "Direction",
+    eventMetadataDescriptors.add(new MetadataDescriptor(MetadataDescriptor::UINT8, 1, "Direction",
         "Direction of crossing: 1 = rising, 0 = falling", "crossing.direction"));
-    eventMetaDataDescriptors.add(new MetaDataDescriptor(MetaDataDescriptor::DOUBLE, 1, "Learning rate",
+    eventMetadataDescriptors.add(new MetadataDescriptor(MetadataDescriptor::DOUBLE, 1, "Learning rate",
         "If using adaptive threshold, current threshold learning rate", "crossing.threshold.learningrate"));
 }
 
@@ -94,46 +92,50 @@ CrossingDetector::~CrossingDetector() {}
 
 AudioProcessorEditor* CrossingDetector::createEditor()
 {
-    editor = new CrossingDetectorEditor(this);
-    return editor;
+    editor = std::make_unique<CrossingDetectorEditor>(this);
+    return editor.get();
 }
 
-void CrossingDetector::createEventChannels()
+void CrossingDetector::updateSettings()
 {
-    // add detection event channel
-    const DataChannel* in = getDataChannel(inputChannel);
-
-    if (!in)
+    for(auto stream : getDataStreams())
     {
-        eventChannelPtr = nullptr;
-        return;
+        const ContinuousChannel* in = stream->getContinuousChannels().getUnchecked(inputChannel);
+
+        if (!in)
+        {
+            eventChannelPtr = nullptr;
+            return;
+        }
+        
+        EventChannel* ttlChan;
+        EventChannel::Settings ttlChanSettings{
+            EventChannel::Type::TTL,
+            "Crossing detector output",
+            "Triggers whenever the input signal crosses a voltage threshold.",
+            "crossing.event",
+            getDataStream(stream->getStreamId())
+        };
+
+        // // metadata storing source data channel
+        // MetaDataDescriptor sourceChanDesc(MetaDataDescriptor::UINT16, 3, "Source Channel",
+        //     "Index at its source, Source processor ID and Sub Processor index of the channel that triggers this event", "source.channel.identifier.full");
+        // MetaDataValue sourceChanVal(sourceChanDesc);
+        // uint16 sourceInfo[3];
+        // sourceInfo[0] = in->getSourceIndex();
+        // sourceInfo[1] = in->getSourceNodeID();
+        // sourceInfo[2] = in->getSubProcessorIdx();
+        // sourceChanVal.setValue(static_cast<const uint16*>(sourceInfo));
+        // chan->addMetaData(sourceChanDesc, sourceChanVal);
+
+        // event-related metadata!
+        for (auto desc : eventMetadataDescriptors)
+        {
+            ttlChan->addEventMetadata(desc);
+        }
+
+        eventChannelPtr = eventChannels.add(ttlChan);
     }
-
-    float sampleRate = in->getSampleRate();
-    EventChannel* chan = new EventChannel(EventChannel::TTL, 8, 1, sampleRate, this);
-    chan->setName("Crossing detector output");
-    chan->setDescription("Triggers whenever the input signal crosses a voltage threshold.");
-    chan->setIdentifier("crossing.event");
-
-    // metadata storing source data channel
-
-    MetaDataDescriptor sourceChanDesc(MetaDataDescriptor::UINT16, 3, "Source Channel",
-        "Index at its source, Source processor ID and Sub Processor index of the channel that triggers this event", "source.channel.identifier.full");
-    MetaDataValue sourceChanVal(sourceChanDesc);
-    uint16 sourceInfo[3];
-    sourceInfo[0] = in->getSourceIndex();
-    sourceInfo[1] = in->getSourceNodeID();
-    sourceInfo[2] = in->getSubProcessorIdx();
-    sourceChanVal.setValue(static_cast<const uint16*>(sourceInfo));
-    chan->addMetaData(sourceChanDesc, sourceChanVal);
-
-    // event-related metadata!
-    for (auto desc : eventMetaDataDescriptors)
-    {
-        chan->addEventMetaData(desc);
-    }
-
-    eventChannelPtr = eventChannelArray.add(chan);
 }
 
 void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
@@ -144,15 +146,15 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
         return;
     }
 
-    int nSamples = getNumSamples(inputChannel);
+    int nSamples = getNumSamplesInBlock(inputChannel);
     const float* const rp = continuousBuffer.getReadPointer(inputChannel);
-    juce::int64 startTs = getTimestamp(inputChannel);
+    juce::int64 startTs = getFirstSampleNumberForBlock(inputChannel);
 
     // turn off event from previous buffer if necessary
-    int turnoffOffset = turnoffEvent ? jmax(0, int(turnoffEvent->getTimestamp() - startTs)) : -1;
+    int turnoffOffset = turnoffEvent ? jmax(0, (int)(turnoffEvent->getSampleNumber() - startTs)) : -1;
     if (turnoffOffset >= 0 && turnoffOffset < nSamples)
     {
-        addEvent(eventChannelPtr, turnoffEvent, turnoffOffset);
+        addEvent(turnoffEvent, turnoffOffset);
         turnoffEvent = nullptr;
     }
 
@@ -502,7 +504,7 @@ void CrossingDetector::setParameter(int parameterIndex, float newValue)
     }
 }
 
-bool CrossingDetector::enable()
+bool CrossingDetector::startAcquisition()
 {
     jumpLimitElapsed = jumpLimitSleep;
     updateSampleRateDependentValues();
@@ -510,7 +512,7 @@ bool CrossingDetector::enable()
     return isEnabled;
 }
 
-bool CrossingDetector::disable()
+bool CrossingDetector::stopAcquisition()
 {
     // set this to pastSpan so that we don't trigger on old data when we start again.
     sampToReenable = pastSpan + futureSpan + 1;    
@@ -521,35 +523,35 @@ bool CrossingDetector::disable()
 
 // ----- private functions ------
 
-void CrossingDetector::handleEvent(const EventChannel* eventInfo, const MidiMessage& event, int samplePosition)
+void CrossingDetector::handleTTLEvent(TTLEventPtr event)
 {
     jassert(indicatorChan > -1);
     const EventChannel* adaptChanInfo = getEventChannel(indicatorChan);
     jassert(isValidIndicatorChan(adaptChanInfo));
-    if (eventInfo == adaptChanInfo && thresholdType == ADAPTIVE && !adaptThreshPaused)
-    {
-        // get error of received event
-        BinaryEventPtr binaryEvent = BinaryEvent::deserializeFromMessage(event, eventInfo);
-        if (binaryEvent == nullptr)
-        {
-            return;
-        }
-        float eventValue = floatFromBinaryEvent(binaryEvent);
-        float eventErr = errorFromTarget(eventValue);
+    // if (event == adaptChanInfo && thresholdType == ADAPTIVE && !adaptThreshPaused)
+    // {
+    //     // get error of received event
+    //     BinaryEventPtr binaryEvent = BinaryEvent::deserializeFromMessage(event, eventInfo);
+    //     if (binaryEvent == nullptr)
+    //     {
+    //         return;
+    //     }
+    //     float eventValue = floatFromBinaryEvent(binaryEvent);
+    //     float eventErr = errorFromTarget(eventValue);
 
-        // update state
-        currLRDivisor += decayRate;
-        double currDecayingLR = currLearningRate - currMinLearningRate;
-        currLearningRate = currDecayingLR / currLRDivisor + currMinLearningRate;
+    //     // update state
+    //     currLRDivisor += decayRate;
+    //     double currDecayingLR = currLearningRate - currMinLearningRate;
+    //     currLearningRate = currDecayingLR / currLRDivisor + currMinLearningRate;
 
-        // update threshold
-        constantThresh -= currLearningRate * eventErr;
-        if (useAdaptThreshRange)
-        {
-            constantThresh = toThresholdInRange(constantThresh);
-        }
-        thresholdVal = constantThresh;
-    }
+    //     // update threshold
+    //     constantThresh -= currLearningRate * eventErr;
+    //     if (useAdaptThreshRange)
+    //     {
+    //         constantThresh = toThresholdInRange(constantThresh);
+    //     }
+    //     thresholdVal = constantThresh;
+    // }
 }
 
 void CrossingDetector::restartAdaptiveThreshold()
@@ -648,10 +650,10 @@ float CrossingDetector::floatFromBinaryEvent(BinaryEventPtr& eventPtr)
 
 bool CrossingDetector::isValidIndicatorChan(const EventChannel* eventInfo)
 {
-    EventChannel::EventChannelTypes type = eventInfo->getChannelType();
-    bool isBinary = type >= EventChannel::BINARY_BASE_VALUE && type < EventChannel::INVALID;
-    bool isNonempty = eventInfo->getLength() > 0;
-    return isBinary && isNonempty;
+    // EventChannel::EventChannelTypes type = eventInfo->getChannelType();
+    // bool isBinary = type >= EventChannel::BINARY_BASE_VALUE && type < EventChannel::INVALID;
+    // bool isNonempty = eventInfo->getLength() > 0;
+    // return isBinary && isNonempty;
 }
 
 float CrossingDetector::nextRandomThresh()
@@ -720,43 +722,41 @@ void CrossingDetector::triggerEvent(juce::int64 bufferTs, int crossingOffset,
 {
     // Construct metadata array
     // The order has to match the order the descriptors are stored in createEventChannels.
-    MetaDataValueArray mdArray;
+    MetadataValueArray mdArray;
 
     int mdInd = 0;
-    MetaDataValue* crossingPointVal = new MetaDataValue(*eventMetaDataDescriptors[mdInd++]);
+    MetadataValue* crossingPointVal = new MetadataValue(*eventMetadataDescriptors[mdInd++]);
     crossingPointVal->setValue(bufferTs + crossingOffset);
     mdArray.add(crossingPointVal);
 
-    MetaDataValue* crossingLevelVal = new MetaDataValue(*eventMetaDataDescriptors[mdInd++]);
+    MetadataValue* crossingLevelVal = new MetadataValue(*eventMetadataDescriptors[mdInd++]);
     crossingLevelVal->setValue(crossingLevel);
     mdArray.add(crossingLevelVal);
 
-    MetaDataValue* threshVal = new MetaDataValue(*eventMetaDataDescriptors[mdInd++]);
+    MetadataValue* threshVal = new MetadataValue(*eventMetadataDescriptors[mdInd++]);
     threshVal->setValue(threshold);
     mdArray.add(threshVal);
 
-    MetaDataValue* directionVal = new MetaDataValue(*eventMetaDataDescriptors[mdInd++]);
+    MetadataValue* directionVal = new MetadataValue(*eventMetadataDescriptors[mdInd++]);
     directionVal->setValue(static_cast<juce::uint8>(crossingLevel > threshold));
     mdArray.add(directionVal);
 
-    MetaDataValue* learningRateVal = new MetaDataValue(*eventMetaDataDescriptors[mdInd++]);
+    MetadataValue* learningRateVal = new MetadataValue(*eventMetadataDescriptors[mdInd++]);
     learningRateVal->setValue(thresholdType == ADAPTIVE ? currLearningRate : 0);
     mdArray.add(learningRateVal);
 
     // Create events
-    int currEventChan = eventChannel;
-    juce::uint8 ttlDataOn = 1 << currEventChan;
     int sampleNumOn = std::max(crossingOffset, 0);
     juce::int64 eventTsOn = bufferTs + sampleNumOn;
     TTLEventPtr eventOn = TTLEvent::createTTLEvent(eventChannelPtr, eventTsOn,
-        &ttlDataOn, sizeof(juce::uint8), mdArray, currEventChan);
-    addEvent(eventChannelPtr, eventOn, sampleNumOn);
+        eventChannel, true, mdArray);
+    addEvent(eventOn, sampleNumOn);
 
     juce::uint8 ttlDataOff = 0;
     int sampleNumOff = sampleNumOn + eventDurationSamp;
     juce::int64 eventTsOff = bufferTs + sampleNumOff;
     TTLEventPtr eventOff = TTLEvent::createTTLEvent(eventChannelPtr, eventTsOff,
-        &ttlDataOff, sizeof(juce::uint8), mdArray, currEventChan);
+        eventChannel, ttlDataOff, mdArray);
 
     // Add or schedule turning-off event
     // We don't care whether there are other turning-offs scheduled to occur either in
@@ -767,7 +767,7 @@ void CrossingDetector::triggerEvent(juce::int64 bufferTs, int crossingOffset,
     if (sampleNumOff <= bufferLength)
     {
         // add event now
-        addEvent(eventChannelPtr, eventOff, sampleNumOff);
+        addEvent(eventOff, sampleNumOff);
     }
     else
     {
