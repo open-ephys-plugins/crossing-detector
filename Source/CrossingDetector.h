@@ -69,6 +69,9 @@ public:
 
     int inputChannel; //Index of the inut channel
     int eventChannel;
+
+    // if using channel threshold:
+    int thresholdChannel;
     
     float sampleRate; // Pointer to the actual input channel
     int eventDurationSamp;
@@ -85,8 +88,6 @@ enum ThresholdType { CONSTANT = 0, RANDOM, CHANNEL, NUM_THRESHOLDS };
 
 class CrossingDetector : public GenericProcessor
 {
-    friend class CrossingDetectorCanvas;
-
 public:
     CrossingDetector();
     ~CrossingDetector();
@@ -98,38 +99,24 @@ public:
 
     void process(AudioSampleBuffer& continuousBuffer) override;
 
-    void setParameter(int parameterIndex, float newValue) override;
     /** Called when a parameter is updated*/
     void parameterValueChanged(Parameter* param) override;
 
     bool startAcquisition() override;
     bool stopAcquisition() override;
 
-private:
+    /** Get the current selected stream */
+    juce::uint16 getSelectedStream() { return selectedStreamId; }
 
-    enum CrossParameter
-    {
-        THRESH_TYPE,
-        CONST_THRESH,
-        MIN_RAND_THRESH,
-        MAX_RAND_THRESH,
-        THRESH_CHAN,
-        INPUT_CHAN,
-        EVENT_CHAN,
-        POS_ON,
-        NEG_ON,
-        EVENT_DUR,
-        TIMEOUT,
-        PAST_SPAN,
-        PAST_STRICT,
-        FUTURE_SPAN,
-        FUTURE_STRICT,
-        USE_JUMP_LIMIT,
-        JUMP_LIMIT,
-        JUMP_LIMIT_SLEEP,
-        USE_BUF_END_MASK,
-        BUF_END_MASK
-    };
+    /** Set the current selected stream */
+    void setSelectedStream(juce::uint16 streamId);
+
+    /* Returns true if the given chanNum corresponds to an input
+     * and that channel is not equal to the inputChannel.
+     */
+    bool isCompatibleWithInput(int chanNum);
+    
+private:
 
     // ---------------------------- PRIVATE FUNCTIONS ----------------------
 
@@ -160,12 +147,6 @@ private:
  
     /********** channel threshold ***********/
 
-    /* Returns true if the given chanNum corresponds to an input
-     * and that channel has the same source subprocessor as the
-     * selected inputChannel, but is not equal to the inputChannel.
-     */
-    bool isCompatibleWithInput(int chanNum) const;
-
     // Returns a string to display in the threshold box when using a threshold channel
     static String toChannelThreshString(int chanNum);
 
@@ -189,9 +170,6 @@ private:
     // if using random thresholds:
     float randomThreshRange[2];
     float currRandomThresh;
-
-    // if using channel threshold:
-    int thresholdChannel;
 
     bool posOn;
     bool negOn;
@@ -240,8 +218,8 @@ private:
     
     Random rng; // for random thresholds
 
-    // full subprocessor ID of input channel (or 0 if none selected)
-    juce::uint32 validSubProcFullID;
+    // Selected stream's ID
+    juce::uint16 selectedStreamId;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetector);
 };

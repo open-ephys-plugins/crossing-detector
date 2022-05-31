@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 CrossingDetectorCanvas::CrossingDetectorCanvas(GenericProcessor* p)
 {
     processor = static_cast<CrossingDetector*>(p);
-    editor = static_cast<CrossingDetectorEditor*>(processor->editor.get());
+    editor = static_cast<CrossingDetectorEditor*>(processor->getEditor());
     initializeOptionsPanel();
     viewport = new Viewport();
     viewport->setViewedComponent(optionsPanel, false);
@@ -98,224 +98,22 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     constantThreshButton = new ToggleButton("Constant Threshold: ");
     constantThreshButton->setLookAndFeel(&rbLookAndFeel);
     constantThreshButton->setRadioGroupId(threshRadioId, dontSendNotification);
-    constantThreshButton->setBounds(bounds = { xPos, yPos, 150, C_TEXT_HT });
-    constantThreshButton->setToggleState(processor->thresholdType == CrossingDetector::CONSTANT,
+    constantThreshButton->setBounds(bounds = { xPos, yPos, 160, C_TEXT_HT });
+    constantThreshButton->setToggleState((int)processor->getParameter("threshold_type")->getValue() == ThresholdType::CONSTANT,
         dontSendNotification);
     constantThreshButton->setTooltip("Use a constant threshold (set on the main editor panel in the signal chain)");
     constantThreshButton->addListener(this);
     optionsPanel->addAndMakeVisible(constantThreshButton);
     opBounds = opBounds.getUnion(bounds);
 
-    // constantThreshValue = createEditable("ConstantThresholdValue", "0",
-    //     "Constant threshold voltage", bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
-    // constantThreshValue->setEnabled(constantThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(constantThreshValue);
-    // opBounds = opBounds.getUnion(bounds);
+    constantThreshValue = createEditable("ConstantThresholdValue", String((float)processor->getParameter("constant_threshold")->getValue()),
+        "Constant threshold voltage", bounds = { xPos += 160, yPos, 50, C_TEXT_HT });
+    constantThreshValue->setEnabled(constantThreshButton->getToggleState());
+    optionsPanel->addAndMakeVisible(constantThreshValue);
+    opBounds = opBounds.getUnion(bounds);
 
-    thresholdGroupSet->addGroup({ constantThreshButton});
+    thresholdGroupSet->addGroup({ constantThreshButton, constantThreshValue });
 
-    /* --------- Adaptive threshold -------- */
-
-    // yPos += 40;
-
-    // adaptiveThreshButton = new ToggleButton("Optimize correlated inidicator from event channel:");
-    // adaptiveThreshButton->setLookAndFeel(&rbLookAndFeel);
-    // adaptiveThreshButton->setRadioGroupId(threshRadioId, dontSendNotification);
-    // adaptiveThreshButton->setBounds(bounds = { xPos, yPos, 340, C_TEXT_HT });
-    // adaptiveThreshButton->setToggleState(processor->thresholdType == CrossingDetector::ADAPTIVE,
-    //     dontSendNotification);
-    // adaptiveThreshButton->setTooltip(String("Continually adjust the threshold to minimize the error between indicator values sent ") +
-    //     "over the selected channel and the selected target. Assumes that the threshold and the indicator values are correlated " +
-    //     "(but not necessarily linearly), and uses the direction and magnitude of error to calculate adjustments to the threshold.");
-    // adaptiveThreshButton->addListener(this);
-    // optionsPanel->addAndMakeVisible(adaptiveThreshButton);
-    // opBounds = opBounds.getUnion(bounds);
-    
-    // indicatorChanBox = new ComboBox("indicatorChanBox");
-    // indicatorChanBox->setBounds(bounds = { xPos + 340, yPos, 300, C_TEXT_HT });
-    // indicatorChanBox->addListener(this);
-    // indicatorChanBox->setTooltip("Binary event channel carrying indicator values");
-    // indicatorChanBox->setEnabled(adaptiveThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(indicatorChanBox);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // xPos += TAB_WIDTH;
-    // yPos += 30;
-
-    // targetLabel = new Label("targetL", "Target indicator value:");
-    // targetLabel->setBounds(bounds = { xPos, yPos, 150, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(targetLabel);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // lastTargetEditableString = String(processor->indicatorTarget);
-    // targetEditable = createEditable("indicator target", lastTargetEditableString,
-    //     "", bounds = { xPos += 150, yPos, 80, C_TEXT_HT });
-    // targetEditable->setEnabled(adaptiveThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(targetEditable);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // indicatorRangeButton = new ToggleButton("within circular range from");
-    // indicatorRangeButton->setBounds(bounds = { xPos += 85, yPos, 190, C_TEXT_HT });
-    // indicatorRangeButton->setEnabled(adaptiveThreshButton->getToggleState());
-    // indicatorRangeButton->setToggleState(processor->useIndicatorRange, dontSendNotification);
-    // indicatorRangeButton->setTooltip(String("Treat the range of indicator values as circular and minimize the circular ") +
-    //     "distance from the target, with the minimum and maximum of the range considered equal.");
-    // indicatorRangeButton->addListener(this);
-    // optionsPanel->addAndMakeVisible(indicatorRangeButton);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // bool enableRangeControls = adaptiveThreshButton->getToggleState() && indicatorRangeButton->getToggleState();
-
-    // lastIndicatorRangeMinString = String(processor->indicatorRange[0]);
-    // indicatorRangeMinBox = new ComboBox("minimum indicator value");
-    // indicatorRangeMinBox->setEditableText(true);
-    // indicatorRangeMinBox->addItem("-180", 1);
-    // indicatorRangeMinBox->addItem("-pi", 2);
-    // indicatorRangeMinBox->addItem("0", 3);
-    // indicatorRangeMinBox->setText(lastIndicatorRangeMinString, dontSendNotification);
-    // indicatorRangeMinBox->setBounds(bounds = { xPos += 190, yPos, 100, C_TEXT_HT });
-    // indicatorRangeMinBox->addListener(this);
-    // indicatorRangeMinBox->setEnabled(enableRangeControls);
-    // optionsPanel->addAndMakeVisible(indicatorRangeMinBox);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // indicatorRangeTo = new Label("indicatorRangeToL", "to");
-    // indicatorRangeTo->setBounds(bounds = { xPos += 103, yPos, 25, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(indicatorRangeTo);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // lastIndicatorRangeMaxString = String(processor->indicatorRange[1]);
-    // indicatorRangeMaxBox = new ComboBox("maximum indicator value");
-    // indicatorRangeMaxBox->setEditableText(true);
-    // indicatorRangeMaxBox->addItem("180", 1);
-    // indicatorRangeMaxBox->addItem("pi", 2);
-    // indicatorRangeMaxBox->addItem("360", 3);
-    // indicatorRangeMaxBox->addItem("2*pi", 4);
-    // indicatorRangeMaxBox->setText(lastIndicatorRangeMaxString, dontSendNotification);
-    // indicatorRangeMaxBox->setBounds(bounds = { xPos += 28, yPos, 100, C_TEXT_HT });
-    // indicatorRangeMaxBox->addListener(this);
-    // indicatorRangeMaxBox->setEnabled(enableRangeControls);
-    // optionsPanel->addAndMakeVisible(indicatorRangeMaxBox);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // xPos = LEFT_EDGE + 2 * TAB_WIDTH;
-    // yPos += 30;
-
-    // learningRateLabel = new Label("learningRateL", "Start learning rate at");
-    // learningRateLabel->setBounds(bounds = { xPos, yPos, 145, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(learningRateLabel);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // learningRateEditable = createEditable("learningRateE", String(processor->startLearningRate),
-    //     String("Initial amount by which the indicator error is multiplied to obtain a correction factor, which ") +
-    //     "is subtracted from the threshold. Use a negative learning rate if the indicator is negatively correlated " +
-    //     "with the threshold. If the decay rate is 0, the learning rate stays constant.",
-    //     bounds = { xPos += 145, yPos, 60, C_TEXT_HT });
-    // learningRateEditable->setEnabled(adaptiveThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(learningRateEditable);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // minLearningRateLabel = new Label("minLearningRateL", "and approach");
-    // minLearningRateLabel->setBounds(bounds = { xPos += 60, yPos, 95, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(minLearningRateLabel);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // minLearningRateEditable = createEditable("minLearningRateE", String(processor->minLearningRate),
-    //     String("Learning rate to approach in the limit if decay rate is nonzero (updated on restart)"),
-    //     bounds = { xPos += 95, yPos, 60, C_TEXT_HT });
-    // minLearningRateEditable->setEnabled(adaptiveThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(minLearningRateEditable);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // decayRateLabel = new Label("decayRateL", "with decay rate");
-    // decayRateLabel->setBounds(bounds = { xPos += 60, yPos, 100, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(decayRateLabel);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // decayRateEditable = createEditable("decayRateE", String(processor->decayRate),
-    //     String("Determines whether the learning rate decreases over time and how quickly. Each time ") +
-    //     "an event is received, the learning rate is divided by (1 + d*t), where d is the decay and t " +
-    //     "is the number of events since the last reset or acquisition start.",
-    //     bounds = { xPos += 100, yPos, 60, C_TEXT_HT });
-    // decayRateEditable->setEnabled(adaptiveThreshButton->getToggleState());
-    // optionsPanel->addAndMakeVisible(decayRateEditable);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // restartButton = new UtilityButton("RESTART", Font(20));
-    // restartButton->addListener(this);
-    // restartButton->setBounds(bounds = { xPos += 65, yPos, 55, C_TEXT_HT });
-    // restartButton->setEnabled(adaptiveThreshButton->getToggleState());
-    // restartButton->setTooltip(String("Set the learning rate to the start value and resetart decaying toward the minimum ") +
-    //     "value (if decay rate is nonzero). A restart also happens when acquisition stops and restarts.");
-    // optionsPanel->addAndMakeVisible(restartButton);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // pauseButton = new UtilityButton("PAUSE", Font(20));
-    // pauseButton->addListener(this);
-    // pauseButton->setBounds(bounds = { xPos += 60, yPos, 50, C_TEXT_HT });
-    // pauseButton->setEnabled(adaptiveThreshButton->getToggleState());
-    // pauseButton->setTooltip(String("While active, indicator events are ignored."));
-    // pauseButton->setClickingTogglesState(true);
-    // pauseButton->setToggleState(processor->adaptThreshPaused, dontSendNotification);
-    // optionsPanel->addAndMakeVisible(pauseButton);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // xPos = LEFT_EDGE + 2 * TAB_WIDTH;
-    // yPos += 30;
-
-    // threshRangeButton = new ToggleButton("Keep threshold within circular range from");
-    // threshRangeButton->setBounds(bounds = { xPos, yPos, 290, C_TEXT_HT });
-    // threshRangeButton->setEnabled(adaptiveThreshButton->getToggleState());
-    // threshRangeButton->setToggleState(processor->useAdaptThreshRange, dontSendNotification);
-    // threshRangeButton->setTooltip(String("Treat the range of threshold values as circular, such that ") +
-    //     "a positive adjustment over the range maximum will wrap to the minimum and vice versa.");
-    // threshRangeButton->addListener(this);
-    // optionsPanel->addAndMakeVisible(threshRangeButton);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // enableRangeControls = adaptiveThreshButton->getToggleState() && threshRangeButton->getToggleState();
-
-    // lastThreshRangeMinString = String(processor->adaptThreshRange[0]);
-    // threshRangeMinBox = new ComboBox("minimum threshold");
-    // threshRangeMinBox->setEditableText(true);
-    // threshRangeMinBox->addItem("-180", 1);
-    // threshRangeMinBox->addItem("-pi", 2);
-    // threshRangeMinBox->addItem("0", 3);
-    // threshRangeMinBox->setText(lastThreshRangeMinString, dontSendNotification);
-    // threshRangeMinBox->setBounds(bounds = { xPos += 290, yPos, 100, C_TEXT_HT });
-    // threshRangeMinBox->addListener(this);
-    // threshRangeMinBox->setEnabled(enableRangeControls);
-    // optionsPanel->addAndMakeVisible(threshRangeMinBox);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // threshRangeTo = new Label("threshRangeToL", "to");
-    // threshRangeTo->setBounds(bounds = { xPos += 103, yPos, 25, C_TEXT_HT });
-    // optionsPanel->addAndMakeVisible(threshRangeTo);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // lastThreshRangeMaxString = String(processor->adaptThreshRange[1]);
-    // threshRangeMaxBox = new ComboBox("maximum threshold");
-    // threshRangeMaxBox->setEditableText(true);
-    // threshRangeMaxBox->addItem("180", 1);
-    // threshRangeMaxBox->addItem("pi", 2);
-    // threshRangeMaxBox->addItem("360", 3);
-    // threshRangeMaxBox->addItem("2*pi", 4);
-    // threshRangeMaxBox->setText(lastThreshRangeMaxString, dontSendNotification);
-    // threshRangeMaxBox->setBounds(bounds = { xPos += 28, yPos, 100, C_TEXT_HT });
-    // threshRangeMaxBox->addListener(this);
-    // threshRangeMaxBox->setEnabled(enableRangeControls);
-    // optionsPanel->addAndMakeVisible(threshRangeMaxBox);
-    // opBounds = opBounds.getUnion(bounds);
-
-    // thresholdGroupSet->addGroup({
-    //     adaptiveThreshButton, indicatorChanBox,
-    //     targetLabel, targetEditable,
-    //     indicatorRangeButton, indicatorRangeMinBox, indicatorRangeTo, indicatorRangeMaxBox,
-    //     learningRateLabel, learningRateEditable,
-    //     decayRateLabel, decayRateEditable,
-    //     restartButton, pauseButton,
-    //     threshRangeButton, threshRangeMinBox, threshRangeTo, threshRangeMaxBox
-    // });
 
     /* --------- Random threshold ---------- */
 
@@ -325,8 +123,8 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     randomizeButton = new ToggleButton("Draw randomly from uniform distribution");
     randomizeButton->setLookAndFeel(&rbLookAndFeel);
     randomizeButton->setRadioGroupId(threshRadioId, dontSendNotification);
-    randomizeButton->setBounds(bounds = { xPos, yPos, 300, C_TEXT_HT });
-    randomizeButton->setToggleState(processor->thresholdType == CrossingDetector::RANDOM,
+    randomizeButton->setBounds(bounds = { xPos, yPos, 325, C_TEXT_HT });
+    randomizeButton->setToggleState((int)processor->getParameter("threshold_type")->getValue() == ThresholdType::RANDOM,
         dontSendNotification);
     randomizeButton->setTooltip("After each event, choose a new threshold sampled uniformly at random from the given range");
     randomizeButton->addListener(this);
@@ -341,7 +139,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(minThreshLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    minThreshEditable = createEditable("MinThreshE", String(processor->randomThreshRange[0]),
+    minThreshEditable = createEditable("MinThreshE", String((float)processor->getParameter("min_random_threshold")->getValue()),
         "Minimum threshold voltage", bounds = { xPos += 80, yPos, 50, C_TEXT_HT });
     minThreshEditable->setEnabled(randomizeButton->getToggleState());
     optionsPanel->addAndMakeVisible(minThreshEditable);
@@ -352,7 +150,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(maxThreshLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    maxThreshEditable = createEditable("MaxThreshE", String(processor->randomThreshRange[1]),
+    maxThreshEditable = createEditable("MaxThreshE", String((float)processor->getParameter("max_random_threshold")->getValue()),
         "Maximum threshold voltage", bounds = { xPos += 80, yPos, 50, C_TEXT_HT });
     maxThreshEditable->setEnabled(randomizeButton->getToggleState());
     optionsPanel->addAndMakeVisible(maxThreshEditable);
@@ -375,7 +173,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     channelThreshButton->setLookAndFeel(&rbLookAndFeel);
     channelThreshButton->setRadioGroupId(threshRadioId, dontSendNotification);
     channelThreshButton->setBounds(bounds = { xPos, yPos, 200, C_TEXT_HT });
-    channelThreshButton->setToggleState(processor->thresholdType == CrossingDetector::CHANNEL,
+    channelThreshButton->setToggleState((int)processor->getParameter("threshold_type")->getValue() == ThresholdType::CHANNEL,
         dontSendNotification);
     channelThreshButton->setEnabled(false); // only enabled when channelThreshBox is populated
     channelThreshButton->setTooltip("At each sample, compare the level of the input channel with a given threshold channel");
@@ -384,10 +182,10 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     channelThreshBox = new ComboBox("channelSelection");
-    channelThreshBox->setBounds(bounds = { xPos + 200, yPos, 50, C_TEXT_HT });
+    channelThreshBox->setBounds(bounds = { xPos + 210, yPos, 50, C_TEXT_HT });
     channelThreshBox->addListener(this);
     channelThreshBox->setTooltip(
-        "Only channels from the same source subprocessor as the input (but not the input itself) "
+        "Only channels from the same stream as the input (but not the input itself) "
         "can be selected.");
     channelThreshBox->setEnabled(channelThreshButton->getToggleState());
     optionsPanel->addAndMakeVisible(channelThreshBox);
@@ -415,8 +213,8 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     yPos += 45;
 
     limitButton = new ToggleButton("Limit jump size across threshold (|X[k] - X[k-1]|)");
-    limitButton->setBounds(bounds = { xPos, yPos, 340, C_TEXT_HT });
-    limitButton->setToggleState(processor->useJumpLimit, dontSendNotification);
+    limitButton->setBounds(bounds = { xPos, yPos, 420, C_TEXT_HT });
+    limitButton->setToggleState((bool)processor->getParameter("use_jump_limit")->getValue(), dontSendNotification);
     limitButton->addListener(this);
     optionsPanel->addAndMakeVisible(limitButton);
     opBounds = opBounds.getUnion(bounds);
@@ -426,9 +224,9 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(limitLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    limitEditable = createEditable("LimitE", String(processor->jumpLimit), "",
+    limitEditable = createEditable("LimitE", String((float)processor->getParameter("jump_limit")->getValue()), "",
         bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
-    limitEditable->setEnabled(processor->useJumpLimit);
+    limitEditable->setEnabled(limitButton->getToggleState());
     optionsPanel->addAndMakeVisible(limitEditable);
     opBounds = opBounds.getUnion(bounds);
 
@@ -438,9 +236,9 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(limitSleepLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    limitSleepEditable = createEditable("LimitSE", String(processor->jumpLimitSleep), "",
+    limitSleepEditable = createEditable("LimitSE", String((float)processor->getParameter("jump_limit_sleep")->getValue()), "",
         bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
-    limitSleepEditable->setEnabled(processor->useJumpLimit);
+    limitSleepEditable->setEnabled(limitButton->getToggleState());
     optionsPanel->addAndMakeVisible(limitSleepEditable);
     opBounds = opBounds.getUnion(bounds);
 
@@ -464,7 +262,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(pastStrictLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    pastPctEditable = createEditable("PastPctE", String(100 * processor->pastStrict), "",
+    pastPctEditable = createEditable("PastPctE", String(100 * (float)processor->getParameter("past_strict")->getValue()), "",
         bounds = { xPos += 75, yPos, 35, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(pastPctEditable);
     opBounds = opBounds.getUnion(bounds);
@@ -474,7 +272,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(pastPctLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    pastSpanEditable = createEditable("PastSpanE", String(processor->pastSpan), "",
+    pastSpanEditable = createEditable("PastSpanE", String((int)processor->getParameter("past_span")->getValue()), "",
         bounds = { xPos += 70, yPos, 45, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(pastSpanEditable);
     opBounds = opBounds.getUnion(bounds);
@@ -493,7 +291,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(futureStrictLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    futurePctEditable = createEditable("FuturePctE", String(100 * processor->futureStrict), "",
+    futurePctEditable = createEditable("FuturePctE", String(100 * (float)processor->getParameter("future_strict")->getValue()), "",
         bounds = { xPos += 75, yPos, 35, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(futurePctEditable);
     opBounds = opBounds.getUnion(bounds);
@@ -503,7 +301,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(futurePctLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    futureSpanEditable = createEditable("FutureSpanE", String(processor->futureSpan), "",
+    futureSpanEditable = createEditable("FutureSpanE", String((int)processor->getParameter("future_span")->getValue()), "",
         bounds = { xPos += 70, yPos, 45, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(futureSpanEditable);
     opBounds = opBounds.getUnion(bounds);
@@ -541,21 +339,21 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
         "this option to just ignore any crossings before a threshold measured from the end of the buffer.";
 
     bufferMaskButton = new ToggleButton("Ignore crossings ocurring >");
-    bufferMaskButton->setBounds(bounds = { xPos, yPos, 200, C_TEXT_HT });
-    bufferMaskButton->setToggleState(processor->useBufferEndMask, dontSendNotification);
+    bufferMaskButton->setBounds(bounds = { xPos, yPos, 225, C_TEXT_HT });
+    bufferMaskButton->setToggleState((bool)processor->getParameter("use_buffer_end_mask")->getValue(), dontSendNotification);
     bufferMaskButton->addListener(this);
     bufferMaskButton->setTooltip(bufferMaskTT);
     optionsPanel->addAndMakeVisible(bufferMaskButton);
     opBounds = opBounds.getUnion(bounds);
 
-    bufferMaskEditable = createEditable("BufMaskE", String(processor->bufferEndMaskMs),
-        bufferMaskTT, bounds = { xPos += 200, yPos, 40, C_TEXT_HT });
-    bufferMaskEditable->setEnabled(processor->useBufferEndMask);
+    bufferMaskEditable = createEditable("BufMaskE", String((int)processor->getParameter("buffer_end_mask")->getValue()),
+        bufferMaskTT, bounds = { xPos += 225, yPos, 40, C_TEXT_HT });
+    bufferMaskEditable->setEnabled(bufferMaskButton->getToggleState());
     optionsPanel->addAndMakeVisible(bufferMaskEditable);
     opBounds = opBounds.getUnion(bounds);
 
     bufferMaskLabel = new Label("BufMaskL", "ms before the end of a buffer.");
-    bufferMaskLabel->setBounds(bounds = { xPos += 45, yPos, 225, C_TEXT_HT });
+    bufferMaskLabel->setBounds(bounds = { xPos += 45, yPos, 250, C_TEXT_HT });
     bufferMaskLabel->setTooltip(bufferMaskTT);
     optionsPanel->addAndMakeVisible(bufferMaskLabel);
     opBounds = opBounds.getUnion(bounds);
@@ -582,12 +380,12 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     yPos += 45;
 
     durationLabel = new Label("DurL", "Event duration:");
-    durationLabel->setBounds(bounds = { xPos, yPos, 105, C_TEXT_HT });
+    durationLabel->setBounds(bounds = { xPos, yPos, 115, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(durationLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    durationEditable = createEditable("DurE", String(processor->eventDuration), "",
-        bounds = { xPos += 110, yPos, 40, C_TEXT_HT });
+    durationEditable = createEditable("DurE", String((int)processor->getParameter("event_duration")->getValue()), "",
+        bounds = { xPos += 120, yPos, 40, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(durationEditable);
     opBounds = opBounds.getUnion(bounds);
 
@@ -611,142 +409,24 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
 
 void CrossingDetectorCanvas::comboBoxChanged(ComboBox* comboBoxThatHasChanged)
 {
-    auto processor = static_cast<CrossingDetector*>(getProcessor());
-    if (comboBoxThatHasChanged == inputBox)
+    if (comboBoxThatHasChanged == channelThreshBox)
     {
-        processor->setParameter(CrossingDetector::INPUT_CHAN,
-            static_cast<float>(inputBox->getSelectedId() - 1));
-    }
-
-    else if (comboBoxThatHasChanged == outputBox)
-    {
-        processor->setParameter(CrossingDetector::EVENT_CHAN,
-            static_cast<float>(outputBox->getSelectedId() - 1));
-    }
-
-    else if (comboBoxThatHasChanged == indicatorChanBox)
-    {
-        processor->setParameter(CrossingDetector::INDICATOR_CHAN,
-            static_cast<float>(indicatorChanBox->getSelectedId() - 1));
-    }
-
-    else if (comboBoxThatHasChanged == indicatorRangeMinBox)
-    {
-        float newVal = updateExpressionComponent(comboBoxThatHasChanged, lastIndicatorRangeMinString,
-            CrossingDetector::MIN_INDICATOR);
-        if (std::isfinite(newVal))
-        {
-            String newText = comboBoxThatHasChanged->getText();
-            if (newVal > processor->indicatorRange[1])
-            {
-                // push max value up to match
-                indicatorRangeMaxBox->setText(newText, sendNotificationSync);
-            }
-            if (newVal > processor->indicatorTarget)
-            {
-                // push target value up to match
-                targetEditable->setText(newText, sendNotification);
-            }
-        }
-    }
-
-    else if (comboBoxThatHasChanged == indicatorRangeMaxBox)
-    {
-        float newVal = updateExpressionComponent(comboBoxThatHasChanged, lastIndicatorRangeMaxString,
-            CrossingDetector::MAX_INDICATOR);
-        if (std::isfinite(newVal))
-        {
-            String newText = comboBoxThatHasChanged->getText();
-            if (newVal < processor->indicatorRange[0])
-            {
-                // push min value down to match
-                indicatorRangeMinBox->setText(newText, sendNotificationSync);
-            }
-            if (newVal < processor->indicatorTarget)
-            {
-                // push target down to match
-                targetEditable->setText(newText, sendNotification);
-            }
-        }
-    }
-
-    else if (comboBoxThatHasChanged == threshRangeMinBox)
-    {
-        float newVal = updateExpressionComponent(comboBoxThatHasChanged, lastThreshRangeMinString,
-            CrossingDetector::MIN_ADAPTED_THRESH);
-        if (std::isfinite(newVal))
-        {
-            if (newVal > processor->adaptThreshRange[1])
-            {
-                // push max value up to match
-                threshRangeMaxBox->setText(comboBoxThatHasChanged->getText(), sendNotificationSync);
-            }
-            if (adaptiveThreshButton->getToggleState() && newVal > processor->constantThresh)
-            {
-                // push threshold up to match
-                thresholdEditable->setText(String(newVal), sendNotification);
-            }
-        }
-    }
-
-    else if (comboBoxThatHasChanged == threshRangeMaxBox)
-    {
-        float newVal = updateExpressionComponent(comboBoxThatHasChanged, lastThreshRangeMaxString,
-            CrossingDetector::MAX_ADAPTED_THRESH);
-        if (std::isfinite(newVal))
-        {
-            if (newVal < processor->adaptThreshRange[0])
-            {
-                // push min value down to match
-                threshRangeMinBox->setText(comboBoxThatHasChanged->getText(), sendNotificationSync);
-            }
-            if (adaptiveThreshButton->getToggleState() && newVal < processor->constantThresh)
-            {
-                // push threshold down to match
-                thresholdEditable->setText(String(newVal), sendNotification);
-            }
-        }
-    }
-
-    else if (comboBoxThatHasChanged == channelThreshBox)
-    {
-        processor->setParameter(CrossingDetector::THRESH_CHAN,
-            static_cast<float>(channelThreshBox->getSelectedId() - 1));
+        DataStream *currStream = processor->getDataStream(processor->getSelectedStream());
+        currStream->getParameter("threshold_chan")->setNextValue(channelThreshBox->getSelectedId() - 1);
     }
 
 }
 
 void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
 {
-    CrossingDetector* processor = static_cast<CrossingDetector*>(getProcessor());
-
-    // Editor editable labels
-    if (labelThatHasChanged == timeoutEditable)
-    {
-        int newVal;
-        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, processor->timeout, &newVal))
-        {
-            processor->setParameter(CrossingDetector::TIMEOUT, static_cast<float>(newVal));
-        }
-    }
-    else if (labelThatHasChanged == thresholdEditable &&
-        (processor->thresholdType == CrossingDetector::CONSTANT || processor->thresholdType == CrossingDetector::ADAPTIVE))
+    if (labelThatHasChanged == constantThreshValue)
     {
         float newVal;
+        float prevVal = (float)processor->getParameter("constant_threshold")->getValue();
         if (updateFloatLabel(labelThatHasChanged, -FLT_MAX, FLT_MAX,
-            processor->constantThresh, &newVal))
+            prevVal, &newVal))
         {
-            if (processor->thresholdType == CrossingDetector::ADAPTIVE && processor->useAdaptThreshRange)
-            {
-                // enforce threshold range
-                float valInRange = processor->toThresholdInRange(newVal);
-                if (valInRange != newVal)
-                {
-                    labelThatHasChanged->setText(String(valInRange), dontSendNotification);
-                    newVal = valInRange;
-                }
-            }
-            processor->setParameter(CrossingDetector::CONST_THRESH, newVal);
+            processor->getParameter("constant_threshold")->setNextValue(newVal);
         }
     }
 
@@ -754,33 +434,37 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == pastPctEditable)
     {
         float newVal;
-        if (updateFloatLabel(labelThatHasChanged, 0, 100, 100 * processor->pastStrict, &newVal))
+        float prevVal = (float)processor->getParameter("past_strict")->getValue();
+        if (updateFloatLabel(labelThatHasChanged, 0, 100, 100 * prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::PAST_STRICT, newVal / 100);
+            processor->getParameter("past_strict")->setNextValue(newVal / 100);
         }
     }
     else if (labelThatHasChanged == pastSpanEditable)
     {
         int newVal;
-        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, processor->pastSpan, &newVal))
+        int prevVal = (int)processor->getParameter("past_span")->getValue();
+        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::PAST_SPAN, static_cast<float>(newVal));
+            processor->getParameter("past_strict")->setNextValue(newVal);
         }
     }
     else if (labelThatHasChanged == futurePctEditable)
     {
         float newVal;
-        if (updateFloatLabel(labelThatHasChanged, 0, 100, 100 * processor->futureStrict, &newVal))
+        float prevVal = (float)processor->getParameter("future_strict")->getValue();
+        if (updateFloatLabel(labelThatHasChanged, 0, 100, 100 * prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::FUTURE_STRICT, newVal / 100);
+            processor->getParameter("future_strict")->setNextValue(newVal / 100);
         }
     }
     else if (labelThatHasChanged == futureSpanEditable)
     {
         int newVal;
-        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, processor->futureSpan, &newVal))
+        int prevVal = (int)processor->getParameter("future_span")->getValue();
+        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::FUTURE_SPAN, static_cast<float>(newVal));
+            processor->getParameter("future_span")->setNextValue(newVal);
         }
     }
 
@@ -788,11 +472,12 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == minThreshEditable)
     {
         float newVal;
+        float prevVal = (float)processor->getParameter("min_random_threshold")->getValue();
         if (updateFloatLabel(labelThatHasChanged,
-            -FLT_MAX, FLT_MAX, processor->randomThreshRange[0], &newVal))
+            -FLT_MAX, FLT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::MIN_RAND_THRESH, newVal);
-            if (newVal > processor->randomThreshRange[1])
+            processor->getParameter("min_random_threshold")->setNextValue(newVal);
+            if (newVal > (float)processor->getParameter("max_random_threshold")->getValue())
             {
                 // push the max thresh up to match
                 maxThreshEditable->setText(String(newVal), sendNotificationAsync);
@@ -802,11 +487,12 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == maxThreshEditable)
     {
         float newVal;
+        float prevVal = (float)processor->getParameter("max_random_threshold")->getValue();
         if (updateFloatLabel(labelThatHasChanged,
-            -FLT_MAX, FLT_MAX, processor->randomThreshRange[1], &newVal))
+            -FLT_MAX, FLT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::MAX_RAND_THRESH, newVal);
-            if (newVal < processor->randomThreshRange[0])
+            processor->getParameter("max_random_threshold")->setNextValue(newVal);
+            if (newVal < (float)processor->getParameter("min_random_threshold")->getValue())
             {
                 // push the min down to match
                 minThreshEditable->setText(String(newVal), sendNotificationAsync);
@@ -818,25 +504,28 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == limitEditable)
     {
         float newVal;
-        if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, processor->jumpLimit, &newVal))
+        float prevVal = (float)processor->getParameter("jump_limit")->getValue();
+        if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::JUMP_LIMIT, newVal);
+            processor->getParameter("jump_limit")->setNextValue(newVal);
         }
     }
     else if (labelThatHasChanged == limitSleepEditable)
     {
 		float newVal;
-		if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, processor->jumpLimitSleep, &newVal))
+        float prevVal = (float)processor->getParameter("jump_limit_sleep")->getValue();
+		if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::JUMP_LIMIT_SLEEP, newVal);
+            processor->getParameter("jump_limit_sleep")->setNextValue(newVal);
         }
     }
     else if (labelThatHasChanged == bufferMaskEditable)
     {
-        float newVal;
-        if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, processor->bufferEndMaskMs, &newVal))
+        int newVal;
+        int prevVal = (int)processor->getParameter("buffer_end_mask")->getValue();
+        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::BUF_END_MASK, newVal);
+            processor->getParameter("buffer_end_mask")->setNextValue(newVal);
         }
     }
 
@@ -844,55 +533,10 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == durationEditable)
     {
         int newVal;
-        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, processor->eventDuration, &newVal))
+        int prevVal = (int)processor->getParameter("event_duration")->getValue();
+        if (updateIntLabel(labelThatHasChanged, 0, INT_MAX, prevVal, &newVal))
         {
-            processor->setParameter(CrossingDetector::EVENT_DUR, static_cast<float>(newVal));
-        }
-    }
-
-    // Adaptive threshold editable labels
-    else if (labelThatHasChanged == targetEditable)
-    {
-        float newVal = updateExpressionComponent(labelThatHasChanged, lastTargetEditableString,
-            CrossingDetector::INDICATOR_TARGET);
-        if (std::isfinite(newVal) && processor->useIndicatorRange)
-        {
-            // enforce indicator range
-            float valInRange = processor->toIndicatorInRange(newVal);
-            if (valInRange != newVal)
-            {
-                lastTargetEditableString = String(valInRange);
-                targetEditable->setText(lastTargetEditableString, dontSendNotification);
-                targetEditable->setTooltip("");
-                processor->setParameter(CrossingDetector::INDICATOR_TARGET, valInRange);
-            }
-        }
-    }
-    else if (labelThatHasChanged == learningRateEditable)
-    {
-        float newVal;
-        if (updateFloatLabel(labelThatHasChanged, -FLT_MAX, FLT_MAX,
-            processor->startLearningRate, &newVal))
-        {
-            processor->setParameter(CrossingDetector::START_LEARNING_RATE, newVal);
-        }
-    }
-    else if (labelThatHasChanged == minLearningRateEditable)
-    {
-        float newVal;
-        if (updateFloatLabel(labelThatHasChanged, -FLT_MAX, FLT_MAX,
-            processor->minLearningRate, &newVal))
-        {
-            processor->setParameter(CrossingDetector::MIN_LEARNING_RATE, newVal);
-        }
-    }
-    else if (labelThatHasChanged == decayRateEditable)
-    {
-        float newVal;
-        if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX,
-            processor->decayRate, &newVal))
-        {
-            processor->setParameter(CrossingDetector::DECAY_RATE, newVal);
+            processor->getParameter("event_duration")->setNextValue(newVal);
         }
     }
 }
@@ -905,13 +549,13 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
         bool limitOn = button->getToggleState();
         limitEditable->setEnabled(limitOn);
         limitSleepEditable->setEnabled(limitOn);
-        processor->setParameter(CrossingDetector::USE_JUMP_LIMIT, static_cast<float>(limitOn));
+        processor->getParameter("use_jump_limit")->setNextValue(limitOn);
     }
     else if (button == bufferMaskButton)
     {
         bool bufMaskOn = button->getToggleState();
         bufferMaskEditable->setEnabled(bufMaskOn);
-        processor->setParameter(CrossingDetector::USE_BUF_END_MASK, static_cast<float>(bufMaskOn));
+        processor->getParameter("use_buffer_end_mask")->setNextValue(bufMaskOn);
     }
 
     // Threshold radio buttons
@@ -921,39 +565,7 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
         if (on)
         {
             constantThreshValue->setEnabled(true);
-            processor->setParameter(CrossingDetector::THRESH_TYPE,
-                static_cast<float>(CrossingDetector::CONSTANT));
-        }
-    }
-    else if (button == adaptiveThreshButton)
-    {
-        bool on = button->getToggleState();
-        indicatorChanBox->setEnabled(on);
-        targetEditable->setEnabled(on);
-        indicatorRangeButton->setEnabled(on);
-        if (indicatorRangeButton->getToggleState())
-        {
-            indicatorRangeMinBox->setEnabled(on);
-            indicatorRangeMaxBox->setEnabled(on);
-        }
-        learningRateEditable->setEnabled(on);
-        minLearningRateEditable->setEnabled(on);
-        decayRateEditable->setEnabled(on);
-        restartButton->setEnabled(on);
-        pauseButton->setEnabled(on);
-        threshRangeButton->setEnabled(on);
-        if (threshRangeButton->getToggleState())
-        {
-            // explicitly turn the button on in order to trigger side effects
-            threshRangeButton->setToggleState(false, dontSendNotification);
-            threshRangeButton->setToggleState(true, sendNotification);
-        }
-
-        if (on)
-        {
-            thresholdEditable->setEnabled(true);
-            processor->setParameter(CrossingDetector::THRESH_TYPE,
-                static_cast<float>(CrossingDetector::ADAPTIVE));
+            processor->getParameter("threshold_type")->setNextValue(ThresholdType::CONSTANT);
         }
     }
     else if (button == randomizeButton)
@@ -963,9 +575,8 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
         maxThreshEditable->setEnabled(on);
         if (on)
         {
-            thresholdEditable->setEnabled(false);
-            processor->setParameter(CrossingDetector::THRESH_TYPE,
-                static_cast<float>(CrossingDetector::RANDOM));
+            constantThreshValue->setEnabled(false);
+            processor->getParameter("threshold_type")->setNextValue(ThresholdType::RANDOM);
         }
     }
     else if (button == channelThreshButton)
@@ -974,60 +585,22 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
         channelThreshBox->setEnabled(on);
         if (on)
         {
-            thresholdEditable->setEnabled(false);
-            processor->setParameter(CrossingDetector::THRESH_TYPE,
-                static_cast<float>(CrossingDetector::CHANNEL));
+            constantThreshValue->setEnabled(false);
+            processor->getParameter("threshold_type")->setNextValue(ThresholdType::CHANNEL);
         }
     }
 }
 
 void CrossingDetectorCanvas::update()
 {
-    // update input combo box
-    int numInputs = processor->getNumInputs();
-    int currInputId = inputBox->getSelectedId();
-
-    if (numInputs == 0)
-    {
-        if (currInputId != 0)
-        {
-            inputBox->clear(sendNotificationSync);
-        }
-        // else do nothing - box is already empty.
-    }
-    else
-    {
-        inputBox->clear(dontSendNotification);
-        for (int chan = 1; chan <= numInputs; ++chan)
-        {
-            // using 1-based ids since 0 is reserved for "nothing selected"
-            inputBox->addItem(String(chan), chan);
-            if (currInputId == chan)
-            {
-                inputBox->setSelectedId(chan, dontSendNotification);
-            }
-        }
-
-        if (inputBox->getSelectedId() == 0)
-        {
-            // default to first channel
-            inputBox->setSelectedId(1, sendNotificationSync);
-        }
-    }
-
     // update channel threshold combo box
-    updateChannelThreshBox();
-}
-
-void CrossingDetectorCanvas::updateChannelThreshBox()
-{
-    int numInputs = processor->getNumInputs();
+    int numChans = processor->getDataStreams()[0]->getChannelCount();
     int currThreshId = channelThreshBox->getSelectedId();
     channelThreshBox->clear(dontSendNotification);
 
-    for (int chan = 1; chan <= numInputs; ++chan)
+    for (int chan = 1; chan <= numChans; ++chan)
     {
-        if (processor->isCompatibleWithInput(chan - 1))
+        if(processor->isCompatibleWithInput(chan - 1))
         {
             channelThreshBox->addItem(String(chan), chan);
             if (currThreshId == chan)
@@ -1057,34 +630,14 @@ void CrossingDetectorCanvas::updateChannelThreshBox()
     channelThreshButton->setEnabled(!channelThreshBoxEmpty);
 }
 
-
 void CrossingDetectorCanvas::saveCustomParametersToXml(XmlElement* xml)
 {
-    xml->setAttribute("Type", "CrossingDetectorEditor");
+    xml->setAttribute("Type", "CrossingDetectorCanvas");
     XmlElement* paramValues = xml->createNewChildElement("VALUES");
 
-    // channels
-    paramValues->setAttribute("inputChanId", inputBox->getSelectedId());
-    paramValues->setAttribute("outputChanId", outputBox->getSelectedId());
-
-    // rising/falling
-    paramValues->setAttribute("bRising", risingButton->getToggleState());
-    paramValues->setAttribute("bFalling", fallingButton->getToggleState());
-
     // threshold
-    paramValues->setAttribute("thresholdType", processor->thresholdType);
-    paramValues->setAttribute("threshold", processor->constantThresh);
-    paramValues->setAttribute("indicatorChanName", processor->indicatorChanName);
-    paramValues->setAttribute("indicatorTarget", targetEditable->getText());
-    paramValues->setAttribute("useIndicatorRange", indicatorRangeButton->getToggleState());
-    paramValues->setAttribute("indicatorRangeMin", indicatorRangeMinBox->getText());
-    paramValues->setAttribute("indicatorRangeMax", indicatorRangeMaxBox->getText());
-    paramValues->setAttribute("learningRate", learningRateEditable->getText());
-    paramValues->setAttribute("minLearningRate", minLearningRateEditable->getText());
-    paramValues->setAttribute("decayRate", decayRateEditable->getText());
-    paramValues->setAttribute("useAdaptThreshRange", threshRangeButton->getToggleState());
-    paramValues->setAttribute("adaptThreshRangeMin", threshRangeMinBox->getText());
-    paramValues->setAttribute("adaptThreshRangeMax", threshRangeMaxBox->getText());
+    paramValues->setAttribute("thresholdType", (int)processor->getParameter("threshold_type")->getValue());
+    paramValues->setAttribute("constThresh", constantThreshValue->getText());
     paramValues->setAttribute("minThresh", minThreshEditable->getText());
     paramValues->setAttribute("maxThresh", maxThreshEditable->getText());
     paramValues->setAttribute("thresholdChanId", channelThreshBox->getSelectedId());
@@ -1106,39 +659,14 @@ void CrossingDetectorCanvas::saveCustomParametersToXml(XmlElement* xml)
 
     // timing
     paramValues->setAttribute("durationMS", durationEditable->getText());
-    paramValues->setAttribute("timeoutMS", timeoutEditable->getText());
 }
 
 void CrossingDetectorCanvas::loadCustomParametersFromXml(XmlElement* xml)
 {
     forEachXmlChildElementWithTagName(*xml, xmlNode, "VALUES")
     {
-        // channels
-		int inputChanId = xmlNode->getIntAttribute("inputChanId", inputBox->getSelectedId());
-		if (inputBox->indexOfItemId(inputChanId) >= 0) // guard against different # of channels
-		{
-			inputBox->setSelectedId(inputChanId, sendNotificationSync);
-		}
-        outputBox->setSelectedId(xmlNode->getIntAttribute("outputChanId", outputBox->getSelectedId()), sendNotificationSync);
-
-        // rising/falling
-        risingButton->setToggleState(xmlNode->getBoolAttribute("bRising", risingButton->getToggleState()), sendNotificationSync);
-        fallingButton->setToggleState(xmlNode->getBoolAttribute("bFalling", fallingButton->getToggleState()), sendNotificationSync);
-
         // threshold (order is important here!)
-        // set indicator chan name directly so that the right one gets selected in future updates
-        processor->indicatorChanName = xmlNode->getStringAttribute("indicatorChanName", processor->indicatorChanName);
-        indicatorRangeButton->setToggleState(xmlNode->getBoolAttribute("useIndicatorRange", indicatorRangeButton->getToggleState()), sendNotificationSync);
-        indicatorRangeMinBox->setText(xmlNode->getStringAttribute("indicatorRangeMin", indicatorRangeMinBox->getText()), sendNotificationSync);
-        indicatorRangeMaxBox->setText(xmlNode->getStringAttribute("indicatorRangeMax", indicatorRangeMaxBox->getText()), sendNotificationSync);
-        targetEditable->setText(xmlNode->getStringAttribute("indicatorTarget", targetEditable->getText()), sendNotificationSync);
-        learningRateEditable->setText(xmlNode->getStringAttribute("learningRate", learningRateEditable->getText()), sendNotificationSync);
-        minLearningRateEditable->setText(xmlNode->getStringAttribute("minLearningRate", minLearningRateEditable->getText()), sendNotificationSync);
-        decayRateEditable->setText(xmlNode->getStringAttribute("decayRate", decayRateEditable->getText()), sendNotificationSync);
-        threshRangeButton->setToggleState(xmlNode->getBoolAttribute("useAdaptThreshRange", threshRangeButton->getToggleState()), sendNotificationSync);
-        threshRangeMinBox->setText(xmlNode->getStringAttribute("adaptThreshRangeMin", threshRangeMinBox->getText()), sendNotificationSync);
-        threshRangeMaxBox->setText(xmlNode->getStringAttribute("adaptThreshRangeMax", threshRangeMaxBox->getText()), sendNotificationSync);
-        thresholdEditable->setText(xmlNode->getStringAttribute("threshold", thresholdEditable->getText()), sendNotificationSync);
+        constantThreshValue->setText(xmlNode->getStringAttribute("constThresh", constantThreshValue->getText()), sendNotificationSync);
         minThreshEditable->setText(xmlNode->getStringAttribute("minThresh", minThreshEditable->getText()), sendNotificationSync);
         maxThreshEditable->setText(xmlNode->getStringAttribute("maxThresh", maxThreshEditable->getText()), sendNotificationSync);
 		
@@ -1148,32 +676,19 @@ void CrossingDetectorCanvas::loadCustomParametersFromXml(XmlElement* xml)
 			channelThreshBox->setSelectedId(thresholdChanId, sendNotificationSync);
 		}
         
-        int thresholdType;
-        if (xmlNode->hasAttribute("bRandThresh"))
-        {
-            // (for backwards compatability)
-            thresholdType = xmlNode->getBoolAttribute("bRandThresh") ? CrossingDetector::RANDOM : CrossingDetector::CONSTANT;
-        }
-        else
-        {
-            thresholdType = xmlNode->getIntAttribute("thresholdType", processor->thresholdType);
-        }
+        int thresholdType = xmlNode->getIntAttribute("thresholdType", ThresholdType::CONSTANT);
 
         switch (thresholdType)
         {
-        case CrossingDetector::CONSTANT:
+        case ThresholdType::CONSTANT:
             constantThreshButton->setToggleState(true, sendNotificationSync);
             break;
 
-        case CrossingDetector::ADAPTIVE:
-            adaptiveThreshButton->setToggleState(true, sendNotificationSync);
-            break;
-
-        case CrossingDetector::RANDOM:
+        case ThresholdType::RANDOM:
             randomizeButton->setToggleState(true, sendNotificationSync);
             break;
 
-        case CrossingDetector::CHANNEL:
+        case ThresholdType::CHANNEL:
             channelThreshButton->setToggleState(true, sendNotificationSync);
             break;
         }
@@ -1195,124 +710,12 @@ void CrossingDetectorCanvas::loadCustomParametersFromXml(XmlElement* xml)
 
         // timing
         durationEditable->setText(xmlNode->getStringAttribute("durationMS", durationEditable->getText()), sendNotificationSync);
-        timeoutEditable->setText(xmlNode->getStringAttribute("timeoutMS", timeoutEditable->getText()), sendNotificationSync);
 
-        // backwards compatibility
-        // old duration/timeout in samples, convert to ms.
-        if (xmlNode->hasAttribute("duration") || xmlNode->hasAttribute("timeout"))
-        {
-            // use default sample rate of 30000 if no channels present
-            int sampleRate = processor->getTotalDataChannels() > 0 ? processor->getDataChannel(0)->getSampleRate() : 30000;
-            try
-            {
-                int durationSamps = std::stoi(xmlNode->getStringAttribute("duration").toRawUTF8());
-                int durationMs = jmax((durationSamps * 1000) / sampleRate, 1);
-                durationEditable->setText(String(durationMs), sendNotificationAsync);
-            }
-            catch (const std::logic_error&) { /* give up */ }
-            try
-            {
-                int timeoutSamps = std::stoi(xmlNode->getStringAttribute("timeout").toRawUTF8());
-                int timeoutMs = (timeoutSamps * 1000) / sampleRate;
-                timeoutEditable->setText(String(timeoutMs), sendNotificationAsync);
-            }
-            catch (const std::logic_error&) { /* give up */ }
-        }
-
-        // old sample voting - convert to settings "exclusive" of X[k-1] and X[k]
-        if (xmlNode->hasAttribute("pastPct") || xmlNode->hasAttribute("futurePct"))
-        {
-            // past
-            try
-            {
-                int pastSpanOld = std::stoi(xmlNode->getStringAttribute("pastSpan").toRawUTF8());
-                float pastPctOld = std::stof(xmlNode->getStringAttribute("pastPct").toRawUTF8()) / 100;
-                float pastNumOld = ceil(pastSpanOld * pastPctOld);
-                if (pastNumOld < 1)
-                {
-                    CoreServices::sendStatusMessage("Warning: old past span/strictness behavior not supported; using defaults");
-                }
-                else
-                {
-                    int pastSpanNew = pastSpanOld - 1;
-                    pastSpanEditable->setText(String(pastSpanNew), sendNotificationAsync);
-                    float pastNumNew = pastNumOld - 1;
-                    float pastPctNew = pastSpanNew > 0 ? pastNumNew / pastSpanNew : 1.0f;
-                    pastPctEditable->setText(String(pastPctNew * 100), sendNotificationAsync);
-                }
-            }
-            catch (const std::logic_error&) { /* give up */ }
-
-            // future
-            try
-            {
-                int futureSpanOld = std::stoi(xmlNode->getStringAttribute("futureSpan").toRawUTF8());
-                float futurePctOld = std::stof(xmlNode->getStringAttribute("futurePct").toRawUTF8()) / 100;
-                float futureNumOld = ceil(futureSpanOld * futurePctOld);
-                if (futureNumOld < 1)
-                {
-                    CoreServices::sendStatusMessage("Warning: old future span/strictness behavior not supported; using defaults");
-                }
-                else
-                {
-                    int futureSpanNew = futureSpanOld - 1;
-                    futureSpanEditable->setText(String(futureSpanNew), sendNotificationAsync);
-                    float futureNumNew = futureNumOld - 1;
-                    float futurePctNew = futureSpanNew > 0 ? futureNumNew / futureSpanNew : 1.0f;
-                    futurePctEditable->setText(String(futurePctNew * 100), sendNotificationAsync);
-                }
-            }
-            catch (const std::logic_error&) { /* give up */ }
-        }
     }
 }
 
 /**************** private ******************/
 
-float CrossingDetectorCanvas::evalWithPiScope(const String& text, bool* simple)
-{
-    String parseError;
-    Expression expr(text, parseError);
-    if (parseError.isEmpty())
-    {
-        if (simple != nullptr)
-        {
-            *simple = expr.getType() == Expression::constantType;
-        }
-        return static_cast<float>(expr.evaluate(PiScope()));
-    }
-    return NAN;
-}
-
-template<typename T>
-float CrossingDetectorCanvas::updateExpressionComponent(T* component, String& lastText, int paramToChange)
-{
-    String newText = component->getText();
-    bool simple;
-    float newVal = evalWithPiScope(newText, &simple);
-    if (std::isfinite(newVal))
-    {
-        getProcessor()->setParameter(paramToChange, newVal);
-        lastText = newText;
-
-        if (simple)
-        {
-            component->setTooltip("");
-        }
-        else
-        {
-            component->setTooltip("= " + String(newVal));
-        }
-    }
-    else
-    {
-        // evaluation error
-        CoreServices::sendStatusMessage("Invalid expression for " + component->getName());
-        component->setText(lastText, dontSendNotification);
-    }
-
-    return newVal;
-}
 
 Label* CrossingDetectorCanvas::createEditable(const String& name, const String& initialValue,
     const String& tooltip, juce::Rectangle<int> bounds)

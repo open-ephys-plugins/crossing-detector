@@ -44,22 +44,19 @@ class CustomButton
 {
 public:
     /** Constructor*/
-    CustomButton(Parameter* param, StringRef label);
+    CustomButton(Parameter* param, String label);
 
     /** Destructor */
     ~CustomButton() { }
 
-    /** Respond to button clicks*/
-    void buttonClicked(Button*)
-    {
-        param->setNextValue(button->getToggleState());
-    }
+    /** Responds to button clicks*/
+    void buttonClicked(Button* label);
 
-    /** Updates the view*/
-    void updateView()
-    {
-        button->setToggleState((bool)param->getValue(), dontSendNotification);
-    }
+    /** Ensures button state aligns with underlying parameter*/
+    virtual void updateView() override;
+
+    /** Sets component layout*/
+    virtual void resized();
     
 private:
     
@@ -69,7 +66,6 @@ private:
 
 class CrossingDetectorEditor 
     : public VisualizerEditor
-    , public Label::Listener
 {
 public:
     CrossingDetectorEditor(GenericProcessor* parentNode);
@@ -80,6 +76,9 @@ public:
 private:
     ScopedPointer<Label> threshLabel;
     ScopedPointer<Label> threshValue;
+
+    void selectedStreamHasChanged() override;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetectorEditor);
 };
 

@@ -27,54 +27,64 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cfloat>  // FLT_MAX
 
 
-CustomButton::CustomButton(Parameter* param, StringRef label) : ParameterEditor(param)
+CustomButton::CustomButton(Parameter* param, String label) : ParameterEditor(param)
 {
     button = std::make_unique<UtilityButton>(label, Font("Fira Code", "Regular", 14.0f));
     button->addListener(this);
     button->setClickingTogglesState(true);
+    button->setToggleState(false, dontSendNotification);
     addAndMakeVisible(button.get());
-    setBounds(0, 0, 60, 18);
+    setBounds(0, 0, 70, 22);
 }
+
+void CustomButton::buttonClicked(Button*)
+{
+    param->setNextValue(button->getToggleState());
+}
+
+void CustomButton::updateView()
+{
+    if(param != nullptr)
+        button->setToggleState(param->getValue(), dontSendNotification);
+}
+
+void CustomButton::resized()
+{
+    button->setBounds(0, 0, 70, 22);
+}
+
 
 CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
     : VisualizerEditor(parentNode, "Crossing Detector", 205)
 {
 
-    /* ------------- Top row (channels) ------------- */
-    int xPos = 12;
-    int yPos = 25;
+    addSelectedChannelsParameterEditor("Channel", 15, 40);
 
-    addSelectedChannelsParameterEditor("Channel", xPos, yPos);
-
-    addComboBoxParameterEditor("Out", xPos + 70, yPos);
-
-    /* ------------ Middle row (conditions) -------------- */
-    xPos = 20;
-    const int Y_MID = yPos + 48;
-    const int Y_GAP = 2;
-    const int Y_POS_UPPER = Y_MID - (18 + Y_GAP / 2);
-    const int Y_POS_LOWER = Y_MID + Y_GAP / 2;
+    addComboBoxParameterEditor("Out", 110, 25);
 
     Parameter* customParam = getProcessor()->getParameter("Rising");
-    addCustomParameterEditor(new CustomButton(customParam, "Rising"), xPos, Y_POS_UPPER);
+    addCustomParameterEditor(new CustomButton(customParam, "Rising"), 15, 70);
 
     customParam = getProcessor()->getParameter("Falling");
-    addCustomParameterEditor(new CustomButton(customParam, "Falling"), xPos, Y_POS_LOWER);
+    addCustomParameterEditor(new CustomButton(customParam, "Falling"), 15, 95);
 
-    addTextBoxParameterEditor("Timeout (ms)", xPos + 70, Y_POS_UPPER);
-    // addTextBoxParameterEditor("Threshold", xPos + 70, Y_POS_UPPER);
+    addTextBoxParameterEditor("Timeout_ms", 110, 75);
 
-    /* --------- Bottom row (timeout) ------------- */
-    xPos = 30;
-    yPos = Y_MID + 24;
-
-    addTextBoxParameterEditor("Threshold", xPos, yPos);
 }
 
 CrossingDetectorEditor::~CrossingDetectorEditor() {}
 
 Visualizer* CrossingDetectorEditor::createNewCanvas()
 {
-    canvas = std::make_unique<CrossingDetectorCanvas>(getProcessor());
-    return canvas.get();
+    CrossingDetectorCanvas* cdc = new CrossingDetectorCanvas(getProcessor());
+    return cdc;
+}
+
+void CrossingDetectorEditor::selectedStreamHasChanged()
+{
+    CrossingDetector* processor = (CrossingDetector*)getProcessor();
+    processor->setSelectedStream(getCurrentStream());
+
+    // inform the canvas about selected stream updates
+    updateVisualizer();
 }

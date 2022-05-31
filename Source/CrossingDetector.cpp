@@ -25,12 +25,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "CrossingDetectorEditor.h"
 
 #include <cmath> // for ceil, floor
+#include <climits>
 
 /** ------------- Crossing Detector Stream Settings --------------- */
 
 CrossingDetectorSettings::CrossingDetectorSettings() :
     inputChannel(0),
     eventChannel(0),
+    thresholdChannel(0),
     sampleRate(0.0f),
     eventChannelPtr(nullptr),
     turnoffEvent(nullptr)
@@ -108,8 +110,7 @@ CrossingDetector::CrossingDetector()
     : GenericProcessor      ("Crossing Detector")
     , thresholdType         (CONSTANT)
     , constantThresh        (0.0f)
-    , thresholdChannel      (-1)
-    , validSubProcFullID    (0)
+    , selectedStreamId      (0)
     , posOn                 (true)
     , negOn                 (false)
     , eventDuration         (5)
@@ -130,17 +131,15 @@ CrossingDetector::CrossingDetector()
     , inputHistory          (pastSpan + futureSpan + 2)
     , thresholdHistory      (pastSpan + futureSpan + 2)
 {
+    setProcessorType(Plugin::Processor::FILTER);
+
     randomThreshRange[0] = -180.0f;
     randomThreshRange[1] = 180.0f;
     thresholdVal = constantThresh;
 
     addSelectedChannelsParameter(Parameter::STREAM_SCOPE, "Channel", "The input channel to analyze", 1);
 
-    StringArray outputChans;
-    for (int chan = 1; chan <= 16; chan++)
-        outputChans.add(String(chan));
-
-    addCategoricalParameter(Parameter::STREAM_SCOPE, "Out", "Event output channel", outputChans, 1);
+    addIntParameter(Parameter::STREAM_SCOPE, "Out", "Event output channel", 1, 1, 16);
 
     addBooleanParameter(Parameter::GLOBAL_SCOPE, "Rising", 
                         "Trigger events when past samples are below and future samples are above the threshold",
@@ -150,22 +149,13 @@ CrossingDetector::CrossingDetector()
                         "Trigger events when past samples are above and future samples are below the threshold",
                         negOn);
     
-    addIntParameter(Parameter::GLOBAL_SCOPE, "Timeout (ms)", "Minimum length of time between consecutive events",
+    addIntParameter(Parameter::GLOBAL_SCOPE, "Timeout_ms", "Minimum length of time between consecutive events",
                     timeout, 0, 100000);
-    
-    StringArray thresholdNames;
-    for (int i = 0; i < NUM_THRESHOLDS; i++)
-    {
-        thresholdNames.add(String(i));
-    }
 
     addIntParameter(Parameter::GLOBAL_SCOPE, "threshold_type", "Type of Threshold to use", thresholdType, 0, 2);
 
-    addStringParameter(Parameter::GLOBAL_SCOPE, "threshold_value", "Threshold Value set on the basis of type",
-                    String(constantThresh));
-
     addFloatParameter(Parameter::GLOBAL_SCOPE, "constant_threshold", "Constant threshold value",
-                    constantThresh, 0.0f, 100000.0f, 1.0f);
+                    constantThresh, 0.0f, FLT_MAX, 0.1f);
     
     addFloatParameter(Parameter::GLOBAL_SCOPE, "min_random_threshold", "Minimum random threshold value",
                     randomThreshRange[0], -10000.0f, 10000.0f, 0.1f);
@@ -173,7 +163,38 @@ CrossingDetector::CrossingDetector()
     addFloatParameter(Parameter::GLOBAL_SCOPE, "max_random_threshold", "Maximum random threshold value",
                     randomThreshRange[1], -10000.0f, 10000.0f, 0.1f);
 
-    addIntParameter(Parameter::STREAM_SCOPE, "threshold_chan", "Threshold reference channel", 0, 0, getTotalContinuousChannels() -1);
+    addIntParameter(Parameter::STREAM_SCOPE, "threshold_chan", "Threshold reference channel", 0, 0, 1000);
+
+    addIntParameter(Parameter::GLOBAL_SCOPE, "past_span", "Number of past samples to look at at each timepoint (attention span)",
+                    pastSpan, 0, 100000);
+
+    addIntParameter(Parameter::GLOBAL_SCOPE, "future_span", "Number of future samples to look at at each timepoint (attention span)",
+                    futureSpan, 0, 100000);
+    
+    addFloatParameter(Parameter::GLOBAL_SCOPE, "past_strict", "fraction of past span required to be above / below threshold",
+                    pastStrict, 0.0f, 1.0f, 0.01f);
+
+    addFloatParameter(Parameter::GLOBAL_SCOPE, "future_strict", "fraction of future span required to be above / below threshold",
+                    futureStrict, 0.0f, 1.0f, 0.01f);
+    
+    addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_jump_limit", 
+                        "Enable/Disable phase jump filtering",
+                        useJumpLimit);
+    
+    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit", "Maximum jump size",
+                      jumpLimit, 0.0f, FLT_MAX, 0.1f);
+
+    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit_sleep", "Sleep after artifact",
+                      jumpLimitSleep, 0.0f, FLT_MAX, 0.1f);
+
+    addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_buffer_end_mask", 
+                        "Enable/disable buffer end sample voting",
+                        negOn);
+
+    addIntParameter(Parameter::GLOBAL_SCOPE, "buffer_end_mask", "Ignore crossings ocurring specified ms before the end of a buffer",
+                    bufferEndMaskMs, 0, INT_MAX);
+
+    addIntParameter(Parameter::GLOBAL_SCOPE, "event_duration", "Event Duration", eventDuration, 0, INT_MAX);
 }
 
 CrossingDetector::~CrossingDetector() {}
@@ -201,14 +222,17 @@ void CrossingDetector::updateSettings()
             getDataStream(stream->getStreamId())
         };
 
+        ttlChan = new EventChannel(ttlChanSettings);
+
         // event-related metadata!
         for (auto desc : settings[stream->getStreamId()]->eventMetadataDescriptors)
         {
             ttlChan->addEventMetadata(desc);
         }
 
-        settings[stream->getStreamId()]->eventChannelPtr = ttlChan;
         eventChannels.add(ttlChan);
+        eventChannels.getLast()->addProcessor(processorInfo.get());
+        settings[stream->getStreamId()]->eventChannelPtr = eventChannels.getLast();
     }
 }
 
@@ -252,8 +276,10 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
                 currThresholds.resize(nSamples);
             }
             float* const pThresh = currThresholds.getRawDataPointer();
+
+            int threshChanIndex = stream->getContinuousChannels()[settingsModule->thresholdChannel]->getGlobalIndex();
             const float* const rpThreshChan = currThreshType == CHANNEL
-                ? continuousBuffer.getReadPointer(thresholdChannel)
+                ? continuousBuffer.getReadPointer(threshChanIndex)
                 : nullptr;
 
             // define lambdas to access history values more easily
@@ -345,7 +371,7 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
                     // create OFF event
                     int sampleNumOff = std::max(indCross, 0) + settingsModule->eventDurationSamp;
                     TTLEventPtr offEvent = settingsModule->
-                        createEvent(startTs, indCross, nSamples, postThresh, postVal, true);
+                        createEvent(startTs, indCross, nSamples, postThresh, postVal, false);
                     
                     // Add or schedule turning-off event
                     // We don't care whether there are other turning-offs scheduled to occur either in
@@ -388,160 +414,171 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
 
 void CrossingDetector::parameterValueChanged(Parameter* param)
 {
-
-}
-
-// all new values should be validated before this function is called!
-void CrossingDetector::setParameter(int parameterIndex, float newValue)
-{
-    switch (parameterIndex)
+    if (param->getName().equalsIgnoreCase("threshold_type"))
     {
-    case THRESH_TYPE:
-        thresholdType = static_cast<ThresholdType>(static_cast<int>(newValue));
+        thresholdType = static_cast<ThresholdType>((int)param->getValue());
 
         switch (thresholdType)
         {
-        case CONSTANT:
+            case CONSTANT:
+                thresholdVal = constantThresh;
+                break;
+
+            case RANDOM:
+                // get new random threshold
+                currRandomThresh = nextRandomThresh();
+                thresholdVal = currRandomThresh;
+                break;
+
+            case CHANNEL:
+                thresholdVal = toChannelThreshString(settings[selectedStreamId]->thresholdChannel);
+                break;
+        }
+    }
+    else if (param->getName().equalsIgnoreCase("constant_threshold"))
+    {
+        constantThresh = (float)param->getValue();
+        if (thresholdType == CONSTANT)
+        {
             thresholdVal = constantThresh;
-            break;
-
-        case RANDOM:
-            // get new random threshold
-            currRandomThresh = nextRandomThresh();
-            thresholdVal = currRandomThresh;
-            break;
-
-        case CHANNEL:
-            jassert(isCompatibleWithInput(thresholdChannel));
-            thresholdVal = toChannelThreshString(thresholdChannel);
-            break;
         }
-
-        break;
-
-    case CONST_THRESH:
-        constantThresh = newValue;
-        break;
-
-    case MIN_RAND_THRESH:
-        randomThreshRange[0] = newValue;
+    }
+    else if (param->getName().equalsIgnoreCase("min_random_threshold"))
+    {
+        randomThreshRange[0] = (float)param->getValue();
         currRandomThresh = nextRandomThresh();
         if (thresholdType == RANDOM)
         {
             thresholdVal = currRandomThresh;
         }
-        break;
-
-    case MAX_RAND_THRESH:
-        randomThreshRange[1] = newValue;
+    }
+    else if (param->getName().equalsIgnoreCase("max_random_threshold"))
+    {
+        randomThreshRange[1] = (float)param->getValue();
         currRandomThresh = nextRandomThresh();
         if (thresholdType == RANDOM)
         {
             thresholdVal = currRandomThresh;
         }
-        break;
-
-    case THRESH_CHAN:
-        jassert(isCompatibleWithInput(static_cast<int>(newValue)));
-        thresholdChannel = static_cast<int>(newValue);
+    }
+    else if (param->getName().equalsIgnoreCase("threshold_chan"))
+    {
+        settings[param->getStreamId()]->thresholdChannel = (int)param->getValue();
         if (thresholdType == CHANNEL)
         {
-            thresholdVal = toChannelThreshString(thresholdChannel);
+            thresholdVal = toChannelThreshString(settings[param->getStreamId()]->thresholdChannel);
         }
-        break;
-
-    case INPUT_CHAN:
-        inputChannel = static_cast<int>(newValue);
-        validSubProcFullID = getSubProcFullID(inputChannel);
+    }
+    else if (param->getName().equalsIgnoreCase("Channel"))
+    {
+        Array<var>* array = param->getValue().getArray();
+        
+        if (array->size() > 0)
+            settings[param->getStreamId()]->inputChannel = int(array->getReference(0));
+        else
+            settings[param->getStreamId()]->inputChannel = -1;
    
         // make sure available threshold channels take into account new input channel
-        static_cast<CrossingDetectorEditor*>(getEditor())->updateChannelThreshBox();
+        static_cast<CrossingDetectorEditor*>(getEditor())->updateVisualizer();
 
-        // update signal chain, since the event channel metadata has to get updated.
-        CoreServices::updateSignalChain(getEditor());
-
-        break;
-
-    case EVENT_CHAN:
-        eventChannel = static_cast<int>(newValue);
-        break;
-
-    case POS_ON:
-        posOn = static_cast<bool>(newValue);
-        break;
-
-    case NEG_ON:
-        negOn = static_cast<bool>(newValue);
-        break;
-
-    case EVENT_DUR:
-        eventDuration = static_cast<int>(newValue);
-        updateSampleRateDependentValues();
-        break;
-
-    case TIMEOUT:
-        timeout = static_cast<int>(newValue);
-        updateSampleRateDependentValues();
-        break;
-
-    case PAST_SPAN:
-        pastSpan = static_cast<int>(newValue);
-        sampToReenable = pastSpan + futureSpan + 1;
-
-        inputHistory.reset();
-        inputHistory.resize(pastSpan + futureSpan + 2);
-        thresholdHistory.reset();
-        thresholdHistory.resize(pastSpan + futureSpan + 2);
-
-        // counters must reflect current contents of inputHistory and thresholdHistory
-        pastSamplesAbove = 0;
-        futureSamplesAbove = 0;
-        break;
-
-    case PAST_STRICT:
-        pastStrict = newValue;
-        break;
-
-    case FUTURE_SPAN:
-        futureSpan = static_cast<int>(newValue);
-        sampToReenable = pastSpan + futureSpan + 1;
-
-        inputHistory.reset();
-        inputHistory.resize(pastSpan + futureSpan + 2);
-        thresholdHistory.reset();
-        thresholdHistory.resize(pastSpan + futureSpan + 2);
-
-        // counters must reflect current contents of inputHistory and thresholdHistory
-        pastSamplesAbove = 0;
-        futureSamplesAbove = 0;
-        break;
-
-    case FUTURE_STRICT:
-        futureStrict = newValue;
-        break;
-
-    case USE_JUMP_LIMIT:
-        useJumpLimit = static_cast<bool>(newValue);
-        break;
-
-    case JUMP_LIMIT:
-        jumpLimit = newValue;
-        break;
-
-    case JUMP_LIMIT_SLEEP:
-		jumpLimitSleep = newValue * getDataChannel(0)->getSampleRate();
-        break;
-
-    case USE_BUF_END_MASK:
-        useBufferEndMask = static_cast<bool>(newValue);
-        break;
-
-    case BUF_END_MASK:
-        bufferEndMaskMs = static_cast<int>(newValue);
-        updateSampleRateDependentValues();
-        break;
+        // // update signal chain, since the event channel metadata has to get updated.
+        // CoreServices::updateSignalChain(getEditor());
     }
+    else if (param->getName().equalsIgnoreCase("Out"))
+    {
+        settings[param->getStreamId()]->eventChannel = (int)param->getValue() - 1;
+    }
+    else if (param->getName().equalsIgnoreCase("Rising"))
+    {
+        posOn = (bool)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("Falling"))
+    {
+        negOn = (bool)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("event_duration"))
+    {
+        eventDuration = (int)param->getValue();
+        for (auto stream : getDataStreams())
+        {
+            settings[stream->getStreamId()]->updateSampleRateDependentValues(eventDuration, timeout, bufferEndMaskMs);
+        }
+    }
+    else if (param->getName().equalsIgnoreCase("Timeout_ms"))
+    {
+        timeout = (int)param->getValue();
+        for (auto stream : getDataStreams())
+        {
+            settings[stream->getStreamId()]->updateSampleRateDependentValues(eventDuration, timeout, bufferEndMaskMs);
+        }
+    }
+    else if (param->getName().equalsIgnoreCase("past_span"))
+    {
+        pastSpan = (int)param->getValue();
+        sampToReenable = pastSpan + futureSpan + 1;
+
+        inputHistory.reset();
+        inputHistory.resize(pastSpan + futureSpan + 2);
+        thresholdHistory.reset();
+        thresholdHistory.resize(pastSpan + futureSpan + 2);
+
+        // counters must reflect current contents of inputHistory and thresholdHistory
+        pastSamplesAbove = 0;
+        futureSamplesAbove = 0;
+    }
+    else if (param->getName().equalsIgnoreCase("future_span"))
+    {
+        futureSpan = (int)param->getValue();
+        sampToReenable = pastSpan + futureSpan + 1;
+
+        inputHistory.reset();
+        inputHistory.resize(pastSpan + futureSpan + 2);
+        thresholdHistory.reset();
+        thresholdHistory.resize(pastSpan + futureSpan + 2);
+
+        // counters must reflect current contents of inputHistory and thresholdHistory
+        pastSamplesAbove = 0;
+        futureSamplesAbove = 0;
+    }
+    else if (param->getName().equalsIgnoreCase("past_strict"))
+    {
+        pastStrict = (float)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("future_strict"))
+    {
+        futureStrict = (float)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("use_jump_limit"))
+    {
+        useJumpLimit = (bool)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("jump_limit"))
+    {
+        jumpLimit = (float)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("jump_limit_sleep"))
+    {
+        if(selectedStreamId != 0)
+        {
+            float sampRate = getDataStream(selectedStreamId)->getSampleRate();
+            jumpLimitSleep = (float)param->getValue() * sampRate;
+        }
+    }
+    else if (param->getName().equalsIgnoreCase("use_buffer_end_mask"))
+    {
+        useBufferEndMask = (bool)param->getValue();
+    }
+    else if (param->getName().equalsIgnoreCase("buffer_end_mask"))
+    {
+        bufferEndMaskMs = (int)param->getValue();
+        for (auto stream : getDataStreams())
+        {
+            settings[stream->getStreamId()]->updateSampleRateDependentValues(eventDuration, timeout, bufferEndMaskMs);
+        }
+    }
+    
 }
+
 
 bool CrossingDetector::startAcquisition()
 {
@@ -567,6 +604,12 @@ bool CrossingDetector::stopAcquisition()
     }
     
     return true;
+}
+
+void CrossingDetector::setSelectedStream(juce::uint16 streamId)
+{
+    selectedStreamId = streamId;
+    parameterValueChanged(getParameter("jump_limit_sleep"));
 }
 
 // ----- private functions ------
@@ -669,6 +712,17 @@ float CrossingDetector::nextRandomThresh()
 {
     float range = randomThreshRange[1] - randomThreshRange[0];
     return randomThreshRange[0] + range * rng.nextFloat();
+}
+
+bool CrossingDetector::isCompatibleWithInput(int chanNum)
+{
+    if (settings[selectedStreamId]->inputChannel == chanNum 
+        && getDataStream(selectedStreamId)->getContinuousChannels()[chanNum] != nullptr)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 String CrossingDetector::toChannelThreshString(int chanNum)

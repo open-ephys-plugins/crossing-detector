@@ -84,8 +84,8 @@ public:
     void refreshState() override;
     void update() override;
     void refresh() override;
-    void beginAnimation() override;
-    void endAnimation() override;
+    // void beginAnimation() override;
+    // void endAnimation() override;
 
     void paint(Graphics& g) override;
     void resized() override;
@@ -100,44 +100,11 @@ public:
     /** Loads visualizer parameters from XML object */
     void loadCustomParametersFromXml(XmlElement* xml) override;
 
-    void updateChannelThreshBox();
-
-    CrossingDetector* processor;
-    CrossingDetectorEditor* editor;
-
 private:
     ScopedPointer<Viewport> viewport;
-
-        // Scope to be able to use "pi" in adaptive target range specification
-    class PiScope : public Expression::Scope
-    {
-        // copied from DSP library
-        const double doublePi = 3.1415926535897932384626433832795028841971;
-    public:
-        Expression getSymbolValue(const String& symbol) const override
-        {
-            if (symbol.equalsIgnoreCase("pi"))
-            {
-                return Expression(doublePi);
-            }
-            // to avoid exceptions, return a NaN instead to indicate a problem.
-            return Expression(NAN);
-        }
-    };
-
-    /* Utility for parsing a string as an expression with PiScope
-     * If unsuccessful, returns a nan.
-     * Else, if not null, simple will contain whether the passed string was a simple constant.
-     */
-    static float evalWithPiScope(const String& text, bool* simple = nullptr);
-
-    /* Update a Component that takes an Expression and sets the corresponding parameter.
-     * Returns the new float value. If the expression was not evaluated successfully,
-     * std::isfinite called on the return value will return false.
-     * @param paramToChange should be a member of the CrossingDetector::Parameter enum.
-     */
-    template<typename T>
-    float updateExpressionComponent(T* component, String& lastText, int paramToChange);
+    
+    CrossingDetector* processor;
+    CrossingDetectorEditor* editor;
 
     // Basic UI element creation methods. Always register "this" (the editor) as the listener,
     // but may specify a different Component in which to actually display the element.
@@ -174,37 +141,6 @@ private:
 
     ScopedPointer<ToggleButton> constantThreshButton;
     ScopedPointer<Label> constantThreshValue;
-
-    // adaptive threshold
-    // row 1
-    ScopedPointer<ToggleButton> adaptiveThreshButton;
-    ScopedPointer<ComboBox> indicatorChanBox;
-    // row 2
-    ScopedPointer<Label> targetLabel;
-    ScopedPointer<Label> targetEditable;
-    String lastTargetEditableString;
-    ScopedPointer<ToggleButton> indicatorRangeButton;
-    ScopedPointer<ComboBox> indicatorRangeMinBox;
-    String lastIndicatorRangeMinString;
-    ScopedPointer<Label> indicatorRangeTo;
-    ScopedPointer<ComboBox> indicatorRangeMaxBox;
-    String lastIndicatorRangeMaxString;
-    // row 3
-    ScopedPointer<Label> learningRateLabel;
-    ScopedPointer<Label> learningRateEditable;
-    ScopedPointer<Label> minLearningRateLabel;
-    ScopedPointer<Label> minLearningRateEditable;
-    ScopedPointer<Label> decayRateLabel;
-    ScopedPointer<Label> decayRateEditable;
-    ScopedPointer<UtilityButton> restartButton;
-    ScopedPointer<UtilityButton> pauseButton;
-    // row 4
-    ScopedPointer<ToggleButton> threshRangeButton;
-    ScopedPointer<ComboBox> threshRangeMinBox;
-    String lastThreshRangeMinString;
-    ScopedPointer<Label> threshRangeTo;
-    ScopedPointer<ComboBox> threshRangeMaxBox;
-    String lastThreshRangeMaxString;
 
     // threshold randomization
     ScopedPointer<ToggleButton> randomizeButton;
