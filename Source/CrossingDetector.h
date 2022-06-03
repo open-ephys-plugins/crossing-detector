@@ -73,10 +73,12 @@ public:
     // if using channel threshold:
     int thresholdChannel;
     
-    float sampleRate; // Pointer to the actual input channel
+    float sampleRate;
     int eventDurationSamp;
     int timeoutSamp;
     int bufferEndMaskSamp;
+
+    float jumpLimitSleep;
 
     EventChannel* eventChannelPtr;
     MetadataDescriptorArray eventMetadataDescriptors;
@@ -119,26 +121,6 @@ public:
 private:
 
     // ---------------------------- PRIVATE FUNCTIONS ----------------------
-
-    /*********** adaptive threshold *************/
-
-    /* Use events created by the phase calculator to adapt threshold, if the threshold
-     * mode is adaptive.
-     */
-    void handleTTLEvent(TTLEventPtr event) override;
-
-    /* Calculates the equivalent value of the given float within the given circular range (2-element array).
-     * (e.g. if range[0] == 0, returns the positive float equivalent of x % range[1])
-     */
-    static float toEquivalentInRange(float x, const float* range);
-
-    /* Convert the first element of a binary event to a float, regardless of the type
-     * (assumes eventPtr is not null)
-     */
-    static float floatFromBinaryEvent(BinaryEventPtr& eventPtr);
-
-    // Returns whether the given event chan can be used to train an adaptive threshold.
-    static bool isValidIndicatorChan(const EventChannel* eventInfo);
 
     /********** random threshold ***********/
 
@@ -195,7 +177,6 @@ private:
     // maximum absolute difference between x[k] and x[k-1] to trigger an event on x[k]
     bool useJumpLimit;
     float jumpLimit;
-    float jumpLimitSleep;
     int jumpLimitElapsed;
 
     // ------ INTERNALS -----------

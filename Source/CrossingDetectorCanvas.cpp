@@ -236,7 +236,8 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(limitSleepLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    limitSleepEditable = createEditable("LimitSE", String((float)processor->getParameter("jump_limit_sleep")->getValue()), "",
+    auto currStream = processor->getDataStream(processor->getSelectedStream());
+    limitSleepEditable = createEditable("LimitSE", String((float)currStream->getParameter("jump_limit_sleep")->getValue()), "",
         bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
     limitSleepEditable->setEnabled(limitButton->getToggleState());
     optionsPanel->addAndMakeVisible(limitSleepEditable);
@@ -513,10 +514,11 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == limitSleepEditable)
     {
 		float newVal;
-        float prevVal = (float)processor->getParameter("jump_limit_sleep")->getValue();
+        auto currStream = processor->getDataStream(processor->getSelectedStream());
+        float prevVal = (float)currStream->getParameter("jump_limit_sleep")->getValue();
 		if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, prevVal, &newVal))
         {
-            processor->getParameter("jump_limit_sleep")->setNextValue(newVal);
+            currStream->getParameter("jump_limit_sleep")->setNextValue(newVal);
         }
     }
     else if (labelThatHasChanged == bufferMaskEditable)
@@ -593,8 +595,10 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
 
 void CrossingDetectorCanvas::update()
 {
+    auto currStream = processor->getDataStream(processor->getSelectedStream());
+
     // update channel threshold combo box
-    int numChans = processor->getDataStreams()[0]->getChannelCount();
+    int numChans = currStream->getChannelCount();
     int currThreshId = channelThreshBox->getSelectedId();
     channelThreshBox->clear(dontSendNotification);
 
@@ -628,6 +632,8 @@ void CrossingDetectorCanvas::update()
 
     // channel threshold should be selectable iff there are any choices
     channelThreshButton->setEnabled(!channelThreshBoxEmpty);
+
+    limitSleepEditable->setText(currStream->getParameter("jump_limit_sleep")->getValue().toString(), dontSendNotification);
 }
 
 void CrossingDetectorCanvas::saveCustomParametersToXml(XmlElement* xml)

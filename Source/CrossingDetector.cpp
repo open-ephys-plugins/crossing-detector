@@ -34,6 +34,7 @@ CrossingDetectorSettings::CrossingDetectorSettings() :
     eventChannel(0),
     thresholdChannel(0),
     sampleRate(0.0f),
+    jumpLimitSleep(0),
     eventChannelPtr(nullptr),
     turnoffEvent(nullptr)
 {
@@ -89,7 +90,7 @@ TTLEventPtr CrossingDetectorSettings::createEvent(juce::int64 bufferTs, int cros
         juce::int64 eventTsOn = bufferTs + sampleNumOn;
         TTLEventPtr eventOn = TTLEvent::createTTLEvent(eventChannelPtr, eventTsOn,
             eventChannel, true, mdArray);
-        // addEvent(eventOn, sampleNumOn);
+
         return  eventOn;
     }
     else
@@ -123,8 +124,7 @@ CrossingDetector::CrossingDetector()
     , futureSpan            (0)
     , useJumpLimit          (false)
     , jumpLimit             (5.0f)
-    , jumpLimitSleep        (0)
-    , jumpLimitElapsed      (jumpLimitSleep)
+    , jumpLimitElapsed      (0)
     , sampToReenable        (pastSpan + futureSpan + 1)
     , pastSamplesAbove      (0)
     , futureSamplesAbove    (0)
@@ -184,8 +184,8 @@ CrossingDetector::CrossingDetector()
     addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit", "Maximum jump size",
                       jumpLimit, 0.0f, FLT_MAX, 0.1f);
 
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit_sleep", "Sleep after artifact",
-                      jumpLimitSleep, 0.0f, FLT_MAX, 0.1f);
+    addFloatParameter(Parameter::STREAM_SCOPE, "jump_limit_sleep", "Sleep after artifact",
+                      0.0f, 0.0f, FLT_MAX, 0.1f);
 
     addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_buffer_end_mask", 
                         "Enable/disable buffer end sample voting",
@@ -242,7 +242,7 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
     for (auto stream : getDataStreams())
     {
 
-        if ((*stream)["enable_stream"])
+        if ((*stream)["enable_stream"] && stream->getStreamId() == selectedStreamId)
         {
             CrossingDetectorSettings* settingsModule = settings[stream->getStreamId()];
 
@@ -477,7 +477,10 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
             settings[param->getStreamId()]->inputChannel = int(array->getReference(0));
         else
             settings[param->getStreamId()]->inputChannel = -1;
-   
+
+        if(selectedStreamId != param->getStreamId())
+            setSelectedStream(param->getStreamId());
+
         // make sure available threshold channels take into account new input channel
         static_cast<CrossingDetectorEditor*>(getEditor())->updateVisualizer();
 
@@ -558,10 +561,10 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
     }
     else if (param->getName().equalsIgnoreCase("jump_limit_sleep"))
     {
-        if(selectedStreamId != 0)
+        if(selectedStreamId != 0 && param->getStreamId() == selectedStreamId)
         {
             float sampRate = getDataStream(selectedStreamId)->getSampleRate();
-            jumpLimitSleep = (float)param->getValue() * sampRate;
+            settings[param->getStreamId()]->jumpLimitSleep = (float)param->getValue() * sampRate;
         }
     }
     else if (param->getName().equalsIgnoreCase("use_buffer_end_mask"))
@@ -582,7 +585,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
 
 bool CrossingDetector::startAcquisition()
 {
-    jumpLimitElapsed = jumpLimitSleep;
+    jumpLimitElapsed = settings[selectedStreamId]->jumpLimitSleep;
 
     for(auto stream : getDataStreams())
     {
@@ -609,104 +612,10 @@ bool CrossingDetector::stopAcquisition()
 void CrossingDetector::setSelectedStream(juce::uint16 streamId)
 {
     selectedStreamId = streamId;
-    parameterValueChanged(getParameter("jump_limit_sleep"));
 }
 
 // ----- private functions ------
 
-void CrossingDetector::handleTTLEvent(TTLEventPtr event)
-{
-    // jassert(indicatorChan > -1);
-    // const EventChannel* adaptChanInfo = getEventChannel(indicatorChan);
-    // jassert(isValidIndicatorChan(adaptChanInfo));
-    // if (event == adaptChanInfo && thresholdType == ADAPTIVE && !adaptThreshPaused)
-    // {
-    //     // get error of received event
-    //     BinaryEventPtr binaryEvent = BinaryEvent::deserializeFromMessage(event, eventInfo);
-    //     if (binaryEvent == nullptr)
-    //     {
-    //         return;
-    //     }
-    //     float eventValue = floatFromBinaryEvent(binaryEvent);
-    //     float eventErr = errorFromTarget(eventValue);
-
-    //     // update state
-    //     currLRDivisor += decayRate;
-    //     double currDecayingLR = currLearningRate - currMinLearningRate;
-    //     currLearningRate = currDecayingLR / currLRDivisor + currMinLearningRate;
-
-    //     // update threshold
-    //     constantThresh -= currLearningRate * eventErr;
-    //     if (useAdaptThreshRange)
-    //     {
-    //         constantThresh = toThresholdInRange(constantThresh);
-    //     }
-    //     thresholdVal = constantThresh;
-    // }
-}
-
-float CrossingDetector::toEquivalentInRange(float x, const float* range)
-{
-    if (!range)
-    {
-        jassertfalse;
-        return x;
-    }
-    float top = range[1], bottom = range[0];
-    if (x <= top && x >= bottom)
-    {
-        return x;
-    }
-    float rangeSize = top - bottom;
-    jassert(rangeSize >= 0);
-    if (rangeSize == 0)
-    {
-        return bottom;
-    }
-
-    float rem = fmod(x - bottom, rangeSize);
-    return rem > 0 ? bottom + rem : bottom + rem + rangeSize;
-}
-
-float CrossingDetector::floatFromBinaryEvent(BinaryEventPtr& eventPtr)
-{
-    jassert(eventPtr != nullptr);
-    const void *ptr = eventPtr->getBinaryDataPointer();
-    switch (eventPtr->getBinaryType())
-    {
-    case EventChannel::INT8_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::int8*>(ptr)));
-    case EventChannel::UINT8_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::uint8*>(ptr)));
-    case EventChannel::INT16_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::int16*>(ptr)));
-    case EventChannel::UINT16_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::uint16*>(ptr)));
-    case EventChannel::INT32_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::int32*>(ptr)));
-    case EventChannel::UINT32_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::uint32*>(ptr)));
-    case EventChannel::INT64_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::int64*>(ptr)));
-    case EventChannel::UINT64_ARRAY:
-        return static_cast<float>(*(static_cast<const juce::uint64*>(ptr)));
-    case EventChannel::FLOAT_ARRAY:
-        return *(static_cast<const float*>(ptr));
-    case EventChannel::DOUBLE_ARRAY:
-        return static_cast<float>(*(static_cast<const double*>(ptr)));
-    default:
-        jassertfalse;
-        return 0;
-    }
-}
-
-bool CrossingDetector::isValidIndicatorChan(const EventChannel* eventInfo)
-{
-    // EventChannel::EventChannelTypes type = eventInfo->getChannelType();
-    // bool isBinary = type >= EventChannel::BINARY_BASE_VALUE && type < EventChannel::INVALID;
-    // bool isNonempty = eventInfo->getLength() > 0;
-    // return isBinary && isNonempty;
-}
 
 float CrossingDetector::nextRandomThresh()
 {
@@ -741,7 +650,7 @@ bool CrossingDetector::shouldTrigger(bool direction, float preVal, float postVal
         return false;
     }
 
-    if (jumpLimitElapsed <= jumpLimitSleep)
+    if (jumpLimitElapsed <= settings[selectedStreamId]->jumpLimitSleep)
     {
         jumpLimitElapsed++;
         return false;
