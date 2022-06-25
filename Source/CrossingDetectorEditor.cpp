@@ -60,7 +60,7 @@ CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
 
     addSelectedChannelsParameterEditor("Channel", 15, 40);
 
-    addComboBoxParameterEditor("Out", 110, 25);
+    addComboBoxParameterEditor("TTL_OUT", 110, 25);
 
     Parameter* customParam = getProcessor()->getParameter("Rising");
     addCustomParameterEditor(new CustomButton(customParam, "Rising"), 15, 70);

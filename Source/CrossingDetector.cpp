@@ -139,7 +139,7 @@ CrossingDetector::CrossingDetector()
 
     addSelectedChannelsParameter(Parameter::STREAM_SCOPE, "Channel", "The input channel to analyze", 1);
 
-    addIntParameter(Parameter::STREAM_SCOPE, "Out", "Event output channel", 1, 1, 16);
+    addIntParameter(Parameter::STREAM_SCOPE, "TTL_OUT", "Event output channel", 1, 1, 16);
 
     addBooleanParameter(Parameter::GLOBAL_SCOPE, "Rising", 
                         "Trigger events when past samples are below and future samples are above the threshold",
@@ -155,7 +155,7 @@ CrossingDetector::CrossingDetector()
     addIntParameter(Parameter::GLOBAL_SCOPE, "threshold_type", "Type of Threshold to use", thresholdType, 0, 2);
 
     addFloatParameter(Parameter::GLOBAL_SCOPE, "constant_threshold", "Constant threshold value",
-                    constantThresh, 0.0f, FLT_MAX, 0.1f);
+                    constantThresh, -FLT_MAX, FLT_MAX, 0.1f);
     
     addFloatParameter(Parameter::GLOBAL_SCOPE, "min_random_threshold", "Minimum random threshold value",
                     randomThreshRange[0], -10000.0f, 10000.0f, 0.1f);
@@ -304,6 +304,8 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
                 switch (currThreshType)
                 {
                 case CONSTANT:
+                    pThresh[i] = constantThresh;
+                    break;
                 case RANDOM:
                     pThresh[i] = currRandomThresh;
                     break;
@@ -487,7 +489,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
         // // update signal chain, since the event channel metadata has to get updated.
         // CoreServices::updateSignalChain(getEditor());
     }
-    else if (param->getName().equalsIgnoreCase("Out"))
+    else if (param->getName().equalsIgnoreCase("TTL_OUT"))
     {
         settings[param->getStreamId()]->eventChannel = (int)param->getValue() - 1;
     }
@@ -642,6 +644,7 @@ String CrossingDetector::toChannelThreshString(int chanNum)
 bool CrossingDetector::shouldTrigger(bool direction, float preVal, float postVal,
     float preThresh, float postThresh)
 {
+
     jassert(pastSamplesAbove >= 0 && futureSamplesAbove >= 0);
     // check jumpLimit
     if (useJumpLimit && abs(postVal - preVal) >= jumpLimit)
