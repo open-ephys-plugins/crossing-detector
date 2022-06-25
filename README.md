@@ -10,13 +10,13 @@ Emits a TTL event when a continuous channel crosses a specified threshold level.
 
 ## Usage
 
-### Main panel
+### Plugin Editor
 
-* Basic operation: When the __In__ data channel __Rises__ and/or __Falls__ across the __Threshold__ level, an event turns on on the __Out__ event channel.
+* When the **Channel** that is selected **Rises** and/or **Falls** across the threshold level (specified in the visualizer window), an event is triggered on the `TTL_OUT` line.
 
-* __Timeout__ controls the minimum time between two consecutive events (i.e. for this number of milliseconds after an event fires, no more crossings can be detected).
+* `TIMEOUT_MS` controls the minimum time between two consecutive events (i.e. for this number of milliseconds after an event fires, no more crossings can be detected).
 
-### Additional settings (in visualizer window)
+### Visualizer Window
 
 * #### Threshold type:
   * **Constant** (default) - the threshold is a constant value.
