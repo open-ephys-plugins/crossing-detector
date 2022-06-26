@@ -2,7 +2,7 @@
 
 ![crossing-detector-screenshot](Resources/crossing-detector.png)
 
-Emits a TTL event when a continuous channel crosses a specified threshold level. Each Crossing Detector can only process one input channel at a time, but multiple plugins can be placed in series to trigger on as many channels as desired.
+Emits a TTL event when a continuous channel crosses a specified threshold level. Each Crossing Detector can only process one input channel at a time, but multiple detectors can be placed in series to trigger on as many channels as desired.
 
 ## Installation
 
@@ -30,6 +30,8 @@ Emits a TTL event when a continuous channel crosses a specified threshold level.
   * Cross-threshold jump size limit (does not fire an event if the difference across threshold is too large in magnitude; useful for filtering out wrapped phase jumps, for example)
 
   * Sample voting (make detection more robust to noise by requiring a larger span of samples before or after t0 to be on the correct side)
+
+  * Ignore crossings at the end of a buffer
 
 * Event duration (in ms) - the delay until the "OFF" event after an "ON" event is triggered
 
@@ -101,4 +103,4 @@ Running the `ALL_BUILD` scheme will compile the plugin; running the `INSTALL` sc
 
 ## Attribution
 
-This plugin was originally developed by Mark Schatza in the Translational NeuroEngineering lab at the University of Minnesota. It is now being maintained by the Allen Institute.
+This plugin was originally developed by Ethan Blackwood and Mark Schatza in the Translational NeuroEngineering lab at the University of Minnesota. It is now being maintained by the Allen Institute.
