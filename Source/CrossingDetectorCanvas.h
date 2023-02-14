@@ -94,12 +94,6 @@ public:
     void labelTextChanged(Label* labelThatHasChanged) override;
     void buttonClicked(Button* button) override;
 
-     /** Saves visualizer parameters to XMLoejct */
-    void saveCustomParametersToXml(XmlElement* xml) override;
-
-    /** Loads visualizer parameters from XML object */
-    void loadCustomParametersFromXml(XmlElement* xml) override;
-
 private:
     ScopedPointer<Viewport> viewport;
     

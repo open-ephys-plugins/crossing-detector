@@ -34,7 +34,6 @@ CrossingDetectorSettings::CrossingDetectorSettings() :
     eventChannel(0),
     thresholdChannel(0),
     sampleRate(0.0f),
-    jumpLimitSleep(0),
     eventChannelPtr(nullptr),
     turnoffEvent(nullptr)
 {
@@ -184,7 +183,7 @@ CrossingDetector::CrossingDetector()
     addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit", "Maximum jump size",
                       jumpLimit, 0.0f, FLT_MAX, 0.1f);
 
-    addFloatParameter(Parameter::STREAM_SCOPE, "jump_limit_sleep", "Sleep after artifact",
+    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit_sleep", "Sleep after artifact",
                       0.0f, 0.0f, FLT_MAX, 0.1f);
 
     addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_buffer_end_mask", 
@@ -234,6 +233,23 @@ void CrossingDetector::updateSettings()
         eventChannels.getLast()->addProcessor(processorInfo.get());
         settings[stream->getStreamId()]->eventChannelPtr = eventChannels.getLast();
     }
+
+    // Force trigger parameter value update
+    parameterValueChanged(getParameter("Timeout_ms"));
+    parameterValueChanged(getParameter("threshold_type"));
+    parameterValueChanged(getParameter("constant_threshold"));
+    parameterValueChanged(getParameter("min_random_threshold"));
+    parameterValueChanged(getParameter("max_random_threshold"));
+    parameterValueChanged(getParameter("future_span"));
+    parameterValueChanged(getParameter("past_span"));
+    parameterValueChanged(getParameter("past_strict"));
+    parameterValueChanged(getParameter("future_strict"));
+    parameterValueChanged(getParameter("use_jump_limit"));
+    parameterValueChanged(getParameter("jump_limit"));
+    parameterValueChanged(getParameter("jump_limit_sleep"));
+    parameterValueChanged(getParameter("buffer_end_mask"));
+    parameterValueChanged(getParameter("event_duration"));
+
 }
 
 void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
@@ -416,6 +432,7 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
 
 void CrossingDetector::parameterValueChanged(Parameter* param)
 {
+    LOGD("[Crossing Detector] Parameter value changed: ", param->getName());
     if (param->getName().equalsIgnoreCase("threshold_type"))
     {
         thresholdType = static_cast<ThresholdType>((int)param->getValue());
@@ -563,11 +580,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
     }
     else if (param->getName().equalsIgnoreCase("jump_limit_sleep"))
     {
-        if(selectedStreamId != 0 && param->getStreamId() == selectedStreamId)
-        {
-            float sampRate = getDataStream(selectedStreamId)->getSampleRate();
-            settings[param->getStreamId()]->jumpLimitSleep = (float)param->getValue() * sampRate;
-        }
+        jumpLimitSleep = (float)param->getValue();
     }
     else if (param->getName().equalsIgnoreCase("use_buffer_end_mask"))
     {
@@ -587,7 +600,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
 
 bool CrossingDetector::startAcquisition()
 {
-    jumpLimitElapsed = settings[selectedStreamId]->jumpLimitSleep;
+    jumpLimitElapsed = jumpLimitSleep * getDataStream(selectedStreamId)->getSampleRate();
 
     for(auto stream : getDataStreams())
     {
@@ -653,7 +666,7 @@ bool CrossingDetector::shouldTrigger(bool direction, float preVal, float postVal
         return false;
     }
 
-    if (jumpLimitElapsed <= settings[selectedStreamId]->jumpLimitSleep)
+    if (jumpLimitElapsed <= (jumpLimitSleep * getDataStream(selectedStreamId)->getSampleRate()))
     {
         jumpLimitElapsed++;
         return false;

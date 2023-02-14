@@ -237,7 +237,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     auto currStream = processor->getDataStream(processor->getSelectedStream());
-    limitSleepEditable = createEditable("LimitSE", String((float)currStream->getParameter("jump_limit_sleep")->getValue()), "",
+    limitSleepEditable = createEditable("LimitSE", String((float)processor->getParameter("jump_limit_sleep")->getValue()), "",
         bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
     limitSleepEditable->setEnabled(limitButton->getToggleState());
     optionsPanel->addAndMakeVisible(limitSleepEditable);
@@ -514,11 +514,10 @@ void CrossingDetectorCanvas::labelTextChanged(Label* labelThatHasChanged)
     else if (labelThatHasChanged == limitSleepEditable)
     {
 		float newVal;
-        auto currStream = processor->getDataStream(processor->getSelectedStream());
-        float prevVal = (float)currStream->getParameter("jump_limit_sleep")->getValue();
+        float prevVal = (float)processor->getParameter("jump_limit_sleep")->getValue();
 		if (updateFloatLabel(labelThatHasChanged, 0, FLT_MAX, prevVal, &newVal))
         {
-            currStream->getParameter("jump_limit_sleep")->setNextValue(newVal);
+            processor->getParameter("jump_limit_sleep")->setNextValue(newVal);
         }
     }
     else if (labelThatHasChanged == bufferMaskEditable)
@@ -595,10 +594,14 @@ void CrossingDetectorCanvas::buttonClicked(Button* button)
 
 void CrossingDetectorCanvas::update()
 {
-    auto currStream = processor->getDataStream(processor->getSelectedStream());
 
     // update channel threshold combo box
-    int numChans = currStream->getChannelCount();
+    int numChans = 0;
+    
+    uint16 selStreamId = processor->getSelectedStream();
+    if(selStreamId != 0)
+        numChans = processor->getDataStream(selStreamId)->getChannelCount();
+    
     int currThreshId = channelThreshBox->getSelectedId();
     channelThreshBox->clear(dontSendNotification);
 
@@ -632,92 +635,6 @@ void CrossingDetectorCanvas::update()
 
     // channel threshold should be selectable iff there are any choices
     channelThreshButton->setEnabled(!channelThreshBoxEmpty);
-
-    limitSleepEditable->setText(currStream->getParameter("jump_limit_sleep")->getValue().toString(), dontSendNotification);
-}
-
-void CrossingDetectorCanvas::saveCustomParametersToXml(XmlElement* xml)
-{
-    xml->setAttribute("Type", "CrossingDetectorCanvas");
-    XmlElement* paramValues = xml->createNewChildElement("VALUES");
-
-    // threshold
-    paramValues->setAttribute("thresholdType", (int)processor->getParameter("threshold_type")->getValue());
-    paramValues->setAttribute("constThresh", constantThreshValue->getText());
-    paramValues->setAttribute("minThresh", minThreshEditable->getText());
-    paramValues->setAttribute("maxThresh", maxThreshEditable->getText());
-    paramValues->setAttribute("thresholdChanId", channelThreshBox->getSelectedId());
-
-    // voting
-    paramValues->setAttribute("pastPctExclusive", pastPctEditable->getText());
-    paramValues->setAttribute("pastSpanExclusive", pastSpanEditable->getText());
-    paramValues->setAttribute("futurePctExclusive", futurePctEditable->getText());
-    paramValues->setAttribute("futureSpanExclusive", futureSpanEditable->getText());
-
-    // jump limit
-    paramValues->setAttribute("bJumpLimit", limitButton->getToggleState());
-    paramValues->setAttribute("jumpLimit", limitEditable->getText());
-    paramValues->setAttribute("jumpSleepLimit", limitSleepEditable->getText());
-
-    // buffer end mask
-    paramValues->setAttribute("bBufferEndMask", bufferMaskButton->getToggleState());
-    paramValues->setAttribute("bufferEndMask", bufferMaskEditable->getText());
-
-    // timing
-    paramValues->setAttribute("durationMS", durationEditable->getText());
-}
-
-void CrossingDetectorCanvas::loadCustomParametersFromXml(XmlElement* xml)
-{
-    forEachXmlChildElementWithTagName(*xml, xmlNode, "VALUES")
-    {
-        // threshold (order is important here!)
-        constantThreshValue->setText(xmlNode->getStringAttribute("constThresh", constantThreshValue->getText()), sendNotificationSync);
-        minThreshEditable->setText(xmlNode->getStringAttribute("minThresh", minThreshEditable->getText()), sendNotificationSync);
-        maxThreshEditable->setText(xmlNode->getStringAttribute("maxThresh", maxThreshEditable->getText()), sendNotificationSync);
-		
-		int thresholdChanId = xmlNode->getIntAttribute("thresholdChanId", channelThreshBox->getSelectedId());
-		if (channelThreshBox->indexOfItemId(thresholdChanId) >= 0) // guard against different # of channels
-		{
-			channelThreshBox->setSelectedId(thresholdChanId, sendNotificationSync);
-		}
-        
-        int thresholdType = xmlNode->getIntAttribute("thresholdType", ThresholdType::CONSTANT);
-
-        switch (thresholdType)
-        {
-        case ThresholdType::CONSTANT:
-            constantThreshButton->setToggleState(true, sendNotificationSync);
-            break;
-
-        case ThresholdType::RANDOM:
-            randomizeButton->setToggleState(true, sendNotificationSync);
-            break;
-
-        case ThresholdType::CHANNEL:
-            channelThreshButton->setToggleState(true, sendNotificationSync);
-            break;
-        }
-
-        // voting
-        pastPctEditable->setText(xmlNode->getStringAttribute("pastPctExclusive", pastPctEditable->getText()), sendNotificationSync);
-        pastSpanEditable->setText(xmlNode->getStringAttribute("pastSpanExclusive", pastSpanEditable->getText()), sendNotificationSync);
-        futurePctEditable->setText(xmlNode->getStringAttribute("futurePctExclusive", futurePctEditable->getText()), sendNotificationSync);
-        futureSpanEditable->setText(xmlNode->getStringAttribute("futureSpanExclusive", futureSpanEditable->getText()), sendNotificationSync);
-
-        // jump limit
-        limitButton->setToggleState(xmlNode->getBoolAttribute("bJumpLimit", limitButton->getToggleState()), sendNotificationSync);
-        limitEditable->setText(xmlNode->getStringAttribute("jumpLimit", limitEditable->getText()), sendNotificationSync);
-        limitSleepEditable->setText(xmlNode->getStringAttribute("jumpSleepLimit", limitSleepEditable->getText()), sendNotificationSync);
-
-        // buffer end mask
-        bufferMaskButton->setToggleState(xmlNode->getBoolAttribute("bBufferEndMask", bufferMaskButton->getToggleState()), sendNotificationSync);
-        bufferMaskEditable->setText(xmlNode->getStringAttribute("bufferEndMask", bufferMaskEditable->getText()), sendNotificationSync);
-
-        // timing
-        durationEditable->setText(xmlNode->getStringAttribute("durationMS", durationEditable->getText()), sendNotificationSync);
-
-    }
 }
 
 /**************** private ******************/

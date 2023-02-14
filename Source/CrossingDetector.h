@@ -78,8 +78,6 @@ public:
     int timeoutSamp;
     int bufferEndMaskSamp;
 
-    float jumpLimitSleep;
-
     EventChannel* eventChannelPtr;
     MetadataDescriptorArray eventMetadataDescriptors;
     TTLEventPtr turnoffEvent; // holds a turnoff event that must be added in a later buffer
@@ -177,6 +175,7 @@ private:
     // maximum absolute difference between x[k] and x[k-1] to trigger an event on x[k]
     bool useJumpLimit;
     float jumpLimit;
+    float jumpLimitSleep;
     int jumpLimitElapsed;
 
     // ------ INTERNALS -----------
