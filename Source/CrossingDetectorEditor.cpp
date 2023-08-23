@@ -32,9 +32,9 @@ CustomButton::CustomButton(Parameter* param, String label) : ParameterEditor(par
     button = std::make_unique<UtilityButton>(label, Font("Fira Code", "Regular", 14.0f));
     button->addListener(this);
     button->setClickingTogglesState(true);
-    button->setToggleState(false, dontSendNotification);
+    button->setToggleState(param->getDefaultValue(), dontSendNotification);
     addAndMakeVisible(button.get());
-    setBounds(0, 0, 70, 22);
+    setBounds(0, 0, 80, 22);
 }
 
 void CustomButton::buttonClicked(Button*)
@@ -50,25 +50,42 @@ void CustomButton::updateView()
 
 void CustomButton::resized()
 {
-    button->setBounds(0, 0, 70, 22);
+    button->setBounds(0, 0, 80, 22);
 }
 
 
 CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
-    : VisualizerEditor(parentNode, "Crossing Detector", 205)
+    : VisualizerEditor(parentNode, "Crossing Detector", 310)
+    , thresholdConfig(nullptr)
 {
 
-    addSelectedChannelsParameterEditor("Channel", 15, 40);
+    addSelectedChannelsParameterEditor(Parameter::STREAM_SCOPE, "channel", 15, 25);
+    getParameterEditor("channel")->setLayout(ParameterEditor::nameOnTop);
+    getParameterEditor("channel")->setSize(80, 40);
 
-    addComboBoxParameterEditor("TTL_OUT", 110, 25);
+    addComboBoxParameterEditor(Parameter::STREAM_SCOPE, "ttl_out", 110, 25);
+    getParameterEditor("ttl_out")->setLayout(ParameterEditor::nameOnTop);
+    getParameterEditor("ttl_out")->setSize(80, 40);
 
-    Parameter* customParam = getProcessor()->getParameter("Rising");
-    addCustomParameterEditor(new CustomButton(customParam, "Rising"), 15, 70);
+    Parameter* customParam = getProcessor()->getParameter("rising");
+    addCustomParameterEditor(new CustomButton(customParam, "Rising"), 15, 73);
 
-    customParam = getProcessor()->getParameter("Falling");
+    customParam = getProcessor()->getParameter("falling");
     addCustomParameterEditor(new CustomButton(customParam, "Falling"), 15, 95);
 
-    addTextBoxParameterEditor("Timeout_ms", 110, 75);
+    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "event_duration", 110, 75);
+    getParameterEditor("event_duration")->setLayout(ParameterEditor::nameOnTop);
+    getParameterEditor("event_duration")->setSize(90, 40);
+
+    thresholdTypeButton = std::make_unique<UtilityButton>("Threshold (Constant)", titleFont);
+    thresholdTypeButton->addListener(this);
+    thresholdTypeButton->setRadius(3.0f);
+    thresholdTypeButton->setBounds(210, 30, 90, 35);
+    addAndMakeVisible(thresholdTypeButton.get());
+
+    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "timeout", 210, 75);
+    getParameterEditor("timeout")->setLayout(ParameterEditor::nameOnTop);
+    getParameterEditor("timeout")->setSize(90, 40);
 
 }
 
@@ -84,7 +101,35 @@ void CrossingDetectorEditor::selectedStreamHasChanged()
 {
     CrossingDetector* processor = (CrossingDetector*)getProcessor();
     processor->setSelectedStream(getCurrentStream());
+}
 
-    // inform the canvas about selected stream updates
-    updateVisualizer();
+void CrossingDetectorEditor::buttonClicked(Button* button)
+{
+
+    if (button == thresholdTypeButton.get() && getCurrentStream() > 0)
+    {
+
+        CrossingDetector* processor = (CrossingDetector*)getProcessor();
+
+        int selectedThreshold = (int)processor->getParameter("threshold_type")->getValue();
+
+        int thresholdChan = (int)processor->getDataStream(getCurrentStream())->getParameter("threshold_chan")->getValue();
+
+        thresholdConfig = new ThresholdConfigComponent(processor, selectedThreshold, thresholdChan);
+
+        CallOutBox& myBox
+            = CallOutBox::launchAsynchronously(std::unique_ptr<Component>(thresholdConfig), 
+                button->getScreenBounds(),
+                nullptr);
+
+        myBox.setDismissalMouseClicksAreAlwaysConsumed(true);
+        
+        return;
+    }
+
+}
+
+void CrossingDetectorEditor::updateThresholdButtonText(const String& text)
+{
+    thresholdTypeButton->setLabel(text);
 }

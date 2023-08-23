@@ -136,67 +136,82 @@ CrossingDetector::CrossingDetector()
     randomThreshRange[1] = 180.0f;
     thresholdVal = constantThresh;
 
-    addSelectedChannelsParameter(Parameter::STREAM_SCOPE, "Channel", "The input channel to analyze", 1);
-
-    addIntParameter(Parameter::STREAM_SCOPE, "TTL_OUT", "Event output channel", 1, 1, 16);
-
-    addBooleanParameter(Parameter::GLOBAL_SCOPE, "Rising", 
-                        "Trigger events when past samples are below and future samples are above the threshold",
-                        posOn);
-    
-    addBooleanParameter(Parameter::GLOBAL_SCOPE, "Falling", 
-                        "Trigger events when past samples are above and future samples are below the threshold",
-                        negOn);
-    
-    addIntParameter(Parameter::GLOBAL_SCOPE, "Timeout_ms", "Minimum length of time between consecutive events",
-                    timeout, 0, 100000);
-
-    addIntParameter(Parameter::GLOBAL_SCOPE, "threshold_type", "Type of Threshold to use", thresholdType, 0, 2);
-
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "constant_threshold", "Constant threshold value",
-                    constantThresh, -FLT_MAX, FLT_MAX, 0.1f);
-    
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "min_random_threshold", "Minimum random threshold value",
-                    randomThreshRange[0], -10000.0f, 10000.0f, 0.1f);
-
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "max_random_threshold", "Maximum random threshold value",
-                    randomThreshRange[1], -10000.0f, 10000.0f, 0.1f);
-
-    addIntParameter(Parameter::STREAM_SCOPE, "threshold_chan", "Threshold reference channel", 0, 0, 1000);
-
-    addIntParameter(Parameter::GLOBAL_SCOPE, "past_span", "Number of past samples to look at at each timepoint (attention span)",
-                    pastSpan, 0, 100000);
-
-    addIntParameter(Parameter::GLOBAL_SCOPE, "future_span", "Number of future samples to look at at each timepoint (attention span)",
-                    futureSpan, 0, 100000);
-    
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "past_strict", "fraction of past span required to be above / below threshold",
-                    pastStrict, 0.0f, 1.0f, 0.01f);
-
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "future_strict", "fraction of future span required to be above / below threshold",
-                    futureStrict, 0.0f, 1.0f, 0.01f);
-    
-    addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_jump_limit", 
-                        "Enable/Disable phase jump filtering",
-                        useJumpLimit);
-    
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit", "Maximum jump size",
-                      jumpLimit, 0.0f, FLT_MAX, 0.1f);
-
-    addFloatParameter(Parameter::GLOBAL_SCOPE, "jump_limit_sleep", "Sleep after artifact",
-                      0.0f, 0.0f, FLT_MAX, 0.1f);
-
-    addBooleanParameter(Parameter::GLOBAL_SCOPE, "use_buffer_end_mask", 
-                        "Enable/disable buffer end sample voting",
-                        negOn);
-
-    addIntParameter(Parameter::GLOBAL_SCOPE, "buffer_end_mask", "Ignore crossings ocurring specified ms before the end of a buffer",
-                    bufferEndMaskMs, 0, INT_MAX);
-
-    addIntParameter(Parameter::GLOBAL_SCOPE, "event_duration", "Event Duration", eventDuration, 0, INT_MAX);
 }
 
 CrossingDetector::~CrossingDetector() {}
+
+void CrossingDetector::registerParameters()
+{
+    addSelectedChannelsParameter(Parameter::STREAM_SCOPE, "channel", "Channel", "The input channel to analyze", 1);
+
+    addIntParameter(Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "Event output channel", 1, 1, 16);
+
+    addBooleanParameter(Parameter::PROCESSOR_SCOPE, "rising", "Rising",
+                        "Trigger events when past samples are below and future samples are above the threshold",
+                        posOn);
+    
+    addBooleanParameter(Parameter::PROCESSOR_SCOPE, "falling", "Falling",
+                        "Trigger events when past samples are above and future samples are below the threshold",
+                        negOn);
+    
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "timeout", "Timeout (ms)",
+                    "Minimum length of time between consecutive events",
+                    timeout, 0, 100000);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "threshold_type", "Threshold Type",
+                    "Type of Threshold to use", thresholdType, 0, 2);
+
+    addFloatParameter(Parameter::PROCESSOR_SCOPE, "constant_threshold", "Const Threshold",
+                      "Constant threshold value", "mV",
+                      constantThresh, -FLT_MAX, FLT_MAX, 0.1f);
+    
+    addFloatParameter(Parameter::PROCESSOR_SCOPE, "min_random_threshold", "Min Random",
+                      "Minimum random threshold value", "mV",
+                      randomThreshRange[0], -10000.0f, 10000.0f, 0.1f);
+
+    addFloatParameter(Parameter::PROCESSOR_SCOPE, "max_random_threshold", "Max Random",
+                      "Maximum random threshold value", "mV",
+                      randomThreshRange[1], -10000.0f, 10000.0f, 0.1f);
+
+    addIntParameter(Parameter::STREAM_SCOPE, "threshold_chan", "Threshold Channel",
+                    "Threshold reference channel", 0, 0, 1000);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "past_span", "Past Span",
+                    "Number of past samples to look at at each timepoint (attention span)",
+                    pastSpan, 0, 100000);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "future_span", "Future Span",
+                    "Number of future samples to look at at each timepoint (attention span)",
+                    futureSpan, 0, 100000);
+    
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "past_strict", "Past Fraction",
+                      "Percentage of past span required to be above / below threshold",
+                      pastStrict, 1, 100);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "future_strict", "Future Fraction",
+                    "Percentage of future span required to be above / below threshold",
+                    futureStrict, 1, 100);
+    
+    addBooleanParameter(Parameter::PROCESSOR_SCOPE, "use_jump_limit", "Use Jump Limit",
+                        "Enable/Disable phase jump filtering",
+                        useJumpLimit);
+    
+    addFloatParameter(Parameter::PROCESSOR_SCOPE, "jump_limit", "Jump Limit", "Maximum jump size", "mV",
+                      jumpLimit, 0.0f, FLT_MAX, 0.1f);
+
+    addFloatParameter(Parameter::PROCESSOR_SCOPE, "jump_limit_sleep", "", "Sleep after artifact", "ms",
+                      0.0f, 0.0f, FLT_MAX, 0.1f);
+
+    addBooleanParameter(Parameter::PROCESSOR_SCOPE, "use_buffer_end_mask", "Use Buffer End Mask",
+                        "Enable/disable buffer end sample voting",
+                        negOn);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "buffer_end_mask", "Buffer End Mask",
+                    "Ignore crossings ocurring specified ms before the end of a buffer",
+                    bufferEndMaskMs, 0, INT_MAX);
+
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "event_duration", "Duration (ms)", "Event Duration in ms", eventDuration, 0, 10000);
+}
 
 AudioProcessorEditor* CrossingDetector::createEditor()
 {
@@ -230,26 +245,19 @@ void CrossingDetector::updateSettings()
         }
 
         eventChannels.add(ttlChan);
-        eventChannels.getLast()->addProcessor(processorInfo.get());
+        eventChannels.getLast()->addProcessor(this);
         settings[stream->getStreamId()]->eventChannelPtr = eventChannels.getLast();
+
+        SelectedChannelsParameter* chanParam = (SelectedChannelsParameter*) stream->getParameter("channel");
+
+        if (stream->getChannelCount() > 0 && chanParam->getArrayValue().size() == 0)
+        {
+            Array<var> selectedChans;
+            selectedChans.add(settings[stream->getStreamId()]->inputChannel);
+            chanParam->currentValue = selectedChans;
+        }
+            
     }
-
-    // Force trigger parameter value update
-    parameterValueChanged(getParameter("Timeout_ms"));
-    parameterValueChanged(getParameter("threshold_type"));
-    parameterValueChanged(getParameter("constant_threshold"));
-    parameterValueChanged(getParameter("min_random_threshold"));
-    parameterValueChanged(getParameter("max_random_threshold"));
-    parameterValueChanged(getParameter("future_span"));
-    parameterValueChanged(getParameter("past_span"));
-    parameterValueChanged(getParameter("past_strict"));
-    parameterValueChanged(getParameter("future_strict"));
-    parameterValueChanged(getParameter("use_jump_limit"));
-    parameterValueChanged(getParameter("jump_limit"));
-    parameterValueChanged(getParameter("jump_limit_sleep"));
-    parameterValueChanged(getParameter("buffer_end_mask"));
-    parameterValueChanged(getParameter("event_duration"));
-
 }
 
 void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
@@ -437,22 +445,29 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
     {
         thresholdType = static_cast<ThresholdType>((int)param->getValue());
 
+        String text = "Threshold ";
+
         switch (thresholdType)
         {
             case CONSTANT:
                 thresholdVal = constantThresh;
+                text += "(Constant)";
                 break;
 
             case RANDOM:
                 // get new random threshold
                 currRandomThresh = nextRandomThresh();
                 thresholdVal = currRandomThresh;
+                text += "(Random)";
                 break;
 
             case CHANNEL:
                 thresholdVal = toChannelThreshString(settings[selectedStreamId]->thresholdChannel);
+                text += "(Channel)";
                 break;
         }
+
+        static_cast<CrossingDetectorEditor*>(getEditor())->updateThresholdButtonText(text);
     }
     else if (param->getName().equalsIgnoreCase("constant_threshold"))
     {
@@ -488,7 +503,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
             thresholdVal = toChannelThreshString(settings[param->getStreamId()]->thresholdChannel);
         }
     }
-    else if (param->getName().equalsIgnoreCase("Channel"))
+    else if (param->getName().equalsIgnoreCase("channel"))
     {
         Array<var>* array = param->getValue().getArray();
         
@@ -500,21 +515,16 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
         if(selectedStreamId != param->getStreamId())
             setSelectedStream(param->getStreamId());
 
-        // make sure available threshold channels take into account new input channel
-        static_cast<CrossingDetectorEditor*>(getEditor())->updateVisualizer();
-
-        // // update signal chain, since the event channel metadata has to get updated.
-        // CoreServices::updateSignalChain(getEditor());
     }
-    else if (param->getName().equalsIgnoreCase("TTL_OUT"))
+    else if (param->getName().equalsIgnoreCase("ttl_out"))
     {
         settings[param->getStreamId()]->eventChannel = (int)param->getValue() - 1;
     }
-    else if (param->getName().equalsIgnoreCase("Rising"))
+    else if (param->getName().equalsIgnoreCase("rising"))
     {
         posOn = (bool)param->getValue();
     }
-    else if (param->getName().equalsIgnoreCase("Falling"))
+    else if (param->getName().equalsIgnoreCase("falling"))
     {
         negOn = (bool)param->getValue();
     }
@@ -526,7 +536,7 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
             settings[stream->getStreamId()]->updateSampleRateDependentValues(eventDuration, timeout, bufferEndMaskMs);
         }
     }
-    else if (param->getName().equalsIgnoreCase("Timeout_ms"))
+    else if (param->getName().equalsIgnoreCase("timeout"))
     {
         timeout = (int)param->getValue();
         for (auto stream : getDataStreams())
@@ -635,7 +645,7 @@ void CrossingDetector::setSelectedStream(juce::uint16 streamId)
 float CrossingDetector::nextRandomThresh()
 {
     float range = randomThreshRange[1] - randomThreshRange[0];
-    return randomThreshRange[0] + range * rng.nextFloat();
+    return randomThreshRange[0] + range * Random::getSystemRandom().nextFloat();
 }
 
 bool CrossingDetector::isCompatibleWithInput(int chanNum)

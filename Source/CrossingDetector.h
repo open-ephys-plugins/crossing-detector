@@ -95,6 +95,8 @@ public:
     bool hasEditor() const { return true; }
     AudioProcessorEditor* createEditor() override;
 
+    void registerParameters() override;
+
     void updateSettings() override;
 
     void process(AudioSampleBuffer& continuousBuffer) override;
@@ -196,8 +198,6 @@ private:
 
     Value thresholdVal; // underlying value of the threshold label
     
-    Random rng; // for random thresholds
-
     // Selected stream's ID
     juce::uint16 selectedStreamId;
 

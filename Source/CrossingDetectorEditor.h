@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <VisualizerEditorHeaders.h>
 #include "CrossingDetector.h"
+#include "ThresholdConfigPopup.h"
 
 /*
 Editor (in signal chain) contains:
@@ -66,6 +67,7 @@ private:
 
 class CrossingDetectorEditor 
     : public VisualizerEditor
+    , public Button::Listener
 {
 public:
     CrossingDetectorEditor(GenericProcessor* parentNode);
@@ -73,11 +75,17 @@ public:
 
     Visualizer* createNewCanvas() override;
 
-private:
-    ScopedPointer<Label> threshLabel;
-    ScopedPointer<Label> threshValue;
+    /** Called when threshold type button is clicked */
+    void buttonClicked(Button* button) override;
+
+    void updateThresholdButtonText(const String& btnText);
 
     void selectedStreamHasChanged() override;
+
+private:
+    std::unique_ptr<UtilityButton> thresholdTypeButton;
+
+    ThresholdConfigComponent* thresholdConfig;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetectorEditor);
 };

@@ -73,7 +73,6 @@ private:
 // Visualizer window containing additional settings
 
 class CrossingDetectorCanvas : public Visualizer,
-                               public ComboBox::Listener,
                                public Label::Listener,
                                public Button::Listener
 {
@@ -82,7 +81,7 @@ public:
     ~CrossingDetectorCanvas();
 
     void refreshState() override;
-    void update() override;
+    void updateSettings() override;
     void refresh() override;
     // void beginAnimation() override;
     // void endAnimation() override;
@@ -90,7 +89,6 @@ public:
     void paint(Graphics& g) override;
     void resized() override;
 
-    void comboBoxChanged(ComboBox* comboBoxThatHasChanged) override;
     void labelTextChanged(Label* labelThatHasChanged) override;
     void buttonClicked(Button* button) override;
 
@@ -126,26 +124,6 @@ private:
     ScopedPointer<Component> optionsPanel;
 
     ScopedPointer<Label> optionsPanelTitle;
-    
-    /****** threshold section ******/
-
-    ScopedPointer<Label> thresholdTitle;
-    const static int threshRadioId = 1;
-    ScopedPointer<VerticalGroupSet> thresholdGroupSet;
-
-    ScopedPointer<ToggleButton> constantThreshButton;
-    ScopedPointer<Label> constantThreshValue;
-
-    // threshold randomization
-    ScopedPointer<ToggleButton> randomizeButton;
-    ScopedPointer<Label> minThreshLabel;
-    ScopedPointer<Label> minThreshEditable;
-    ScopedPointer<Label> maxThreshLabel;
-    ScopedPointer<Label> maxThreshEditable;
-
-    // threshold from channel
-    ScopedPointer<ToggleButton> channelThreshButton;
-    ScopedPointer<ComboBox> channelThreshBox;
 
     /******* criteria section *******/
 
@@ -180,16 +158,6 @@ private:
     ScopedPointer<ToggleButton> bufferMaskButton;
     ScopedPointer<Label> bufferMaskEditable;
     ScopedPointer<Label> bufferMaskLabel;
-
-    /******** output section *******/
-
-    ScopedPointer<Label> outputTitle;
-    ScopedPointer<VerticalGroupSet> outputGroupSet;
-
-    // event duration
-    ScopedPointer<Label> durationLabel;
-    ScopedPointer<Label> durationEditable;
-    ScopedPointer<Label> durationUnit;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetectorCanvas);
 };
