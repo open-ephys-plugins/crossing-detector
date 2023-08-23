@@ -421,28 +421,6 @@ bool CrossingDetectorCanvas::updateFloatLabel(Label* label, float min, float max
     return true;
 }
 
-/************** RadioButtonLookAndFeel ***********/
-
-void RadioButtonLookAndFeel::drawTickBox(Graphics& g, Component& component,
-    float x, float y, float w, float h, const bool ticked, const bool isEnabled,
-    const bool isMouseOverButton, const bool isButtonDown)
-{
-    // call base function with ticked = false
-    LookAndFeel_V2::drawTickBox(g, component, x, y, w, h, false, isEnabled, isMouseOverButton, isButtonDown);
-
-    if (ticked)
-    {
-        // draw black circle
-        const float boxSize = w * 0.7f;
-        const juce::Rectangle<float> glassSphereBounds(x, y + (h - boxSize) * 0.5f, boxSize, boxSize);
-        const float tickSize = boxSize * 0.55f;
-
-        g.setColour(component.findColour(isEnabled ? ToggleButton::tickColourId
-            : ToggleButton::tickDisabledColourId));
-        g.fillEllipse(glassSphereBounds.withSizeKeepingCentre(tickSize, tickSize));
-    }
-}
-
 /************ VerticalGroupSet ****************/
 
 VerticalGroupSet::VerticalGroupSet(Colour backgroundColor)

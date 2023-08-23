@@ -33,7 +33,7 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
 
     setSize(240, 75);
     setTabBarDepth(30);
-    getTabbedButtonBar().setLookAndFeel(&lnf4);
+    getTabbedButtonBar().setLookAndFeel(&tabLookNFeel);
 
     /* Constant Threshold */
     Component* constThreshComp = new Component("Constant Threshold Component");

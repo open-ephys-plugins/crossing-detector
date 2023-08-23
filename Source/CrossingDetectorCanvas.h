@@ -39,14 +39,6 @@ Canvas/visualizer contains:
 */
 
 
-// LookAndFeel class with radio-button-style ToggleButton
-class RadioButtonLookAndFeel : public LookAndFeel_V2
-{
-    void drawTickBox(Graphics& g, Component& component, float x, float y, float w, float h,
-        const bool ticked, const bool isEnabled,
-        const bool isMouseOverButton, const bool isButtonDown) override;
-};
-
 /* Renders a rounded rectangular component behind and encompassing each group of
  * components added, with matching widths. Components of each group are not added
  * as children to the groupset or backgrounds; they are just used to position the backgrounds.
@@ -117,8 +109,6 @@ private:
     
 
     void initializeOptionsPanel();
-
-    RadioButtonLookAndFeel rbLookAndFeel;
 
     // --- Canvas elements are managed by editor but invisible until visualizer is opened ----
     ScopedPointer<Component> optionsPanel;
