@@ -51,7 +51,11 @@ public:
     VerticalGroupSet(const String& componentName, Colour backgroundColor = Colours::silver);
     ~VerticalGroupSet();
 
+    void paint(Graphics& g) override;
+
     void addGroup(std::initializer_list<Component*> components);
+
+    void setBackgroundColour(Colour newColour);
 
 private:
     Colour bgColor;

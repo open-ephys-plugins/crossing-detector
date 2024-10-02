@@ -29,16 +29,6 @@
 class CrossingDetectorEditor;
 
 
-// LookAndFeel class with custom Tab size
-class TabLookAndFeel : public LookAndFeel_V4
-{
-    int getTabButtonBestWidth(TabBarButton&, int tabDepth) override
-    {
-        return 80;
-    }
-};
-
-
 /**
 *   Popup window used to edit Spike Channel settings
 */
@@ -66,8 +56,6 @@ private:
     std::unique_ptr<ComboBox> channelThreshBox;
 
     std::unique_ptr<ToggleButton> enabledButton;
-
-    TabLookAndFeel tabLookNFeel;
 };
 
 

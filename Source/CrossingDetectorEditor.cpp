@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 CustomButton::CustomButton(Parameter* param, String label) : ParameterEditor(param)
 {
-    button = std::make_unique<UtilityButton>(label, Font("Fira Code", "Regular", 14.0f));
+    button = std::make_unique<UtilityButton>(label);
     button->addListener(this);
     button->setClickingTogglesState(true);
     button->setToggleState(param->getDefaultValue(), dontSendNotification);
@@ -63,7 +63,7 @@ CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
     getParameterEditor("channel")->setLayout(ParameterEditor::nameOnTop);
     getParameterEditor("channel")->setSize(80, 40);
 
-    addComboBoxParameterEditor(Parameter::STREAM_SCOPE, "ttl_out", 110, 25);
+    addTtlLineParameterEditor (Parameter::STREAM_SCOPE, "ttl_out", 110, 25);
     getParameterEditor("ttl_out")->setLayout(ParameterEditor::nameOnTop);
     getParameterEditor("ttl_out")->setSize(80, 40);
 
@@ -73,17 +73,24 @@ CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
     customParam = getProcessor()->getParameter("falling");
     addCustomParameterEditor(new CustomButton(customParam, "Falling"), 15, 95);
 
-    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "event_duration", 110, 75);
+    addBoundedValueParameterEditor(Parameter::PROCESSOR_SCOPE, "event_duration", 110, 75);
     getParameterEditor("event_duration")->setLayout(ParameterEditor::nameOnTop);
     getParameterEditor("event_duration")->setSize(90, 40);
 
-    thresholdTypeButton = std::make_unique<UtilityButton>("Threshold (Constant)", titleFont);
+    thresholdLabel = std::make_unique<Label>("ThresholdLabel", "Threshold");
+    thresholdLabel->setBounds(210, 25, 90, 20);
+    thresholdLabel->setFont(FontOptions("Inter", "Regular", 13.0f));
+    thresholdLabel->setJustificationType(Justification::centredLeft);
+    addAndMakeVisible(thresholdLabel.get());
+
+    thresholdTypeButton = std::make_unique<UtilityButton>("Constant");
+    thresholdTypeButton->setFont (FontOptions (14.0f));
     thresholdTypeButton->addListener(this);
     thresholdTypeButton->setRadius(3.0f);
-    thresholdTypeButton->setBounds(210, 30, 90, 35);
+    thresholdTypeButton->setBounds(210, 45, 90, 20);
     addAndMakeVisible(thresholdTypeButton.get());
 
-    addTextBoxParameterEditor(Parameter::PROCESSOR_SCOPE, "timeout", 210, 75);
+    addBoundedValueParameterEditor(Parameter::PROCESSOR_SCOPE, "timeout", 210, 75);
     getParameterEditor("timeout")->setLayout(ParameterEditor::nameOnTop);
     getParameterEditor("timeout")->setSize(90, 40);
 

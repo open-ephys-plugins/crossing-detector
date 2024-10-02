@@ -47,8 +47,7 @@ void CrossingDetectorCanvas::refresh() {}
 
 void CrossingDetectorCanvas::paint(Graphics& g)
 {
-    ColourGradient editorBg = editor->getBackgroundGradient();
-    g.fillAll(editorBg.getColourAtPosition(0.5)); // roughly matches editor background (without gradient)
+    g.fillAll (findColour (ThemeColours::componentParentBackground));
 }
 
 void CrossingDetectorCanvas::resized()
@@ -79,7 +78,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
 
     /** ############## EVENT CRITERIA ############## */
 
-    criteriaGroupSet = new VerticalGroupSet("Event criteria controls");
+    criteriaGroupSet = new VerticalGroupSet("Event criteria controls", findColour(ThemeColours::componentBackground));
     optionsPanel->addAndMakeVisible(criteriaGroupSet, 0);
 
     xPos = LEFT_EDGE;
@@ -356,8 +355,8 @@ Label* CrossingDetectorCanvas::createEditable(const String& name, const String& 
     editable->setEditable(true);
     editable->addListener(this);
     editable->setBounds(bounds);
-    editable->setColour(Label::backgroundColourId, Colours::grey);
-    editable->setColour(Label::textColourId, Colours::white);
+    editable->setColour (Label::outlineColourId, findColour (ThemeColours::outline));
+
     if (tooltip.length() > 0)
     {
         editable->setTooltip(tooltip);
@@ -371,7 +370,6 @@ Label* CrossingDetectorCanvas::createLabel(const String& name, const String& tex
     Label* label = new Label(name, text);
     label->setBounds(bounds);
     label->setFont(Font("Small Text", 12, Font::plain));
-    label->setColour(Label::textColourId, Colours::darkgrey);
     return label;
 }
 
@@ -439,6 +437,16 @@ VerticalGroupSet::VerticalGroupSet(const String& componentName, Colour backgroun
 
 VerticalGroupSet::~VerticalGroupSet() {}
 
+void VerticalGroupSet::paint(Graphics& g)
+{
+    Colour themeBgColour = findColour(ThemeColours::componentBackground);
+
+    if (bgColor != themeBgColour)
+    {
+        setBackgroundColour (themeBgColour);
+    }
+}
+
 void VerticalGroupSet::addGroup(std::initializer_list<Component*> components)
 {
     if (!getParentComponent())
@@ -490,5 +498,14 @@ void VerticalGroupSet::addGroup(std::initializer_list<Component*> components)
         bottomBound = topBound + group->getHeight();
         bounds = juce::Rectangle<float>::leftTopRightBottom(leftBound, topBound, rightBound, bottomBound);
         group->setRectangle(bounds);
+    }
+}
+
+void VerticalGroupSet::setBackgroundColour(Colour newColour)
+{
+    bgColor = newColour;
+    for (DrawableRectangle* group : groups)
+    {
+        group->setFill(bgColor);
     }
 }

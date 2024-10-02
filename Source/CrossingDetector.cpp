@@ -144,7 +144,7 @@ void CrossingDetector::registerParameters()
 {
     addSelectedChannelsParameter(Parameter::STREAM_SCOPE, "channel", "Channel", "The input channel to analyze", 1);
 
-    addIntParameter(Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "Event output channel", 1, 1, 16);
+    addTtlLineParameter(Parameter::STREAM_SCOPE, "ttl_out", "TTL Out", "Event output channel", 16);
 
     addBooleanParameter(Parameter::PROCESSOR_SCOPE, "rising", "Rising",
                         "Trigger events when past samples are below and future samples are above the threshold",
@@ -156,7 +156,7 @@ void CrossingDetector::registerParameters()
     
     addIntParameter(Parameter::PROCESSOR_SCOPE, "timeout", "Timeout (ms)",
                     "Minimum length of time between consecutive events",
-                    timeout, 0, 100000);
+                    timeout, 0, 10000);
 
     addIntParameter(Parameter::PROCESSOR_SCOPE, "threshold_type", "Threshold Type",
                     "Type of Threshold to use", thresholdType, 0, 2);
@@ -210,7 +210,7 @@ void CrossingDetector::registerParameters()
                     "Ignore crossings ocurring specified ms before the end of a buffer",
                     bufferEndMaskMs, 0, INT_MAX);
 
-    addIntParameter(Parameter::PROCESSOR_SCOPE, "event_duration", "Duration (ms)", "Event Duration in ms", eventDuration, 0, 10000);
+    addIntParameter(Parameter::PROCESSOR_SCOPE, "event_duration", "Duration (ms)", "Event Duration in ms", eventDuration, 0, 2000);
 }
 
 AudioProcessorEditor* CrossingDetector::createEditor()
@@ -445,25 +445,25 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
     {
         thresholdType = static_cast<ThresholdType>((int)param->getValue());
 
-        String text = "Threshold ";
+        String text;
 
         switch (thresholdType)
         {
             case CONSTANT:
                 thresholdVal = constantThresh;
-                text += "(Constant)";
+                text = "Constant";
                 break;
 
             case RANDOM:
                 // get new random threshold
                 currRandomThresh = nextRandomThresh();
                 thresholdVal = currRandomThresh;
-                text += "(Random)";
+                text = "Random";
                 break;
 
             case CHANNEL:
                 thresholdVal = toChannelThreshString(settings[selectedStreamId]->thresholdChannel);
-                text += "(Channel)";
+                text = "Channel";
                 break;
         }
 

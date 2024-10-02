@@ -33,18 +33,17 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
 
     setSize(240, 75);
     setTabBarDepth(30);
-    getTabbedButtonBar().setLookAndFeel(&tabLookNFeel);
 
     /* Constant Threshold */
     Component* constThreshComp = new Component("Constant Threshold Component");
     constThreshComp->setBounds(0, 0, 240, 45);
 
-    TextBoxParameterEditor* threshEditor = new TextBoxParameterEditor(processor->getParameter("constant_threshold"), 25, 220);
+    TextBoxParameterEditor* threshEditor = new TextBoxParameterEditor(processor->getParameter("constant_threshold"), 22, 220);
     threshEditor->setLayout(ParameterEditor::Layout::nameOnLeft);
     thresholdParamEditors.add(threshEditor);
     constThreshComp->addAndMakeVisible(threshEditor);
     threshEditor->setTopLeftPosition(10, 10);
-    addTab("Constant", findColour(ThemeColors::editorGradientColorId1), constThreshComp, true);
+    addTab("Constant", findColour(ThemeColours::componentBackground), constThreshComp, true);
     
 
     /* Random Threshold */
@@ -64,7 +63,7 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
     randomThresh->addAndMakeVisible(maxRandEditor);
     maxRandEditor->setTopLeftPosition(10, 50);
 
-    addTab("Random", Colours::grey, randomThresh, true);
+    addTab("Random", findColour(ThemeColours::componentBackground), randomThresh, true);
 
     /* Reference Channel Threshold */
     Component* chanThreshComp = new Component("Channel Threshold");
@@ -109,7 +108,7 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
         channelThreshBox->setSelectedItemIndex(0, sendNotification);
     }
 
-    addTab("Channel", Colours::grey, chanThreshComp, true);
+    addTab("Channel", findColour(ThemeColours::componentBackground), chanThreshComp, true);
 
     setCurrentTabIndex(selectedTab, false);
 }
@@ -117,7 +116,6 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
 
 ThresholdConfigComponent::~ThresholdConfigComponent()
 {
-    getTabbedButtonBar().setLookAndFeel(nullptr);
 }
 
 void ThresholdConfigComponent::currentTabChanged(int newCurrentTabIndex, const String &newCurrentTabName)
@@ -125,23 +123,14 @@ void ThresholdConfigComponent::currentTabChanged(int newCurrentTabIndex, const S
     if(newCurrentTabIndex == ThresholdType::CONSTANT)
     {
         setSize(240, 75);
-        setTabBackgroundColour(0, findColour(ThemeColors::editorGradientColorId1));
-        setTabBackgroundColour(1, Colours::darkgrey);
-        setTabBackgroundColour(2, Colours::darkgrey);
     }
     else if(newCurrentTabIndex == ThresholdType::RANDOM)
     {
         setSize(240, 120);
-        setTabBackgroundColour(0, Colours::darkgrey);
-        setTabBackgroundColour(1, findColour(ThemeColors::editorGradientColorId1));
-        setTabBackgroundColour(2, Colours::darkgrey);
     }
     else if(newCurrentTabIndex == ThresholdType::CHANNEL)
     {
         setSize(240, 75);
-        setTabBackgroundColour(0, Colours::darkgrey);
-        setTabBackgroundColour(1, Colours::darkgrey);
-        setTabBackgroundColour(2, findColour(ThemeColors::editorGradientColorId1));
     }
 
     processor->getParameter("threshold_type")->setNextValue(newCurrentTabIndex);

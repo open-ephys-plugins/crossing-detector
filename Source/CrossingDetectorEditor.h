@@ -84,6 +84,7 @@ public:
 
 private:
     std::unique_ptr<UtilityButton> thresholdTypeButton;
+    std::unique_ptr<Label> thresholdLabel;
 
     ThresholdConfigComponent* thresholdConfig;
     
