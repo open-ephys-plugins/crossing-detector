@@ -386,8 +386,8 @@ void CrossingDetector::process(AudioSampleBuffer& continuousBuffer)
 
 
                 // check whether to trigger an event
-                if (currPosOn && shouldTrigger(true, preVal, postVal, preThresh, postThresh) ||
-                    currNegOn && shouldTrigger(false, preVal, postVal, preThresh, postThresh))
+                if ((currPosOn && shouldTrigger(true, preVal, postVal, preThresh, postThresh)) ||
+                    (currNegOn && shouldTrigger(false, preVal, postVal, preThresh, postThresh)))
                 {
                     // create and add ON event
                     TTLEventPtr onEvent = settingsModule->
@@ -464,6 +464,10 @@ void CrossingDetector::parameterValueChanged(Parameter* param)
             case CHANNEL:
                 thresholdVal = toChannelThreshString(settings[selectedStreamId]->thresholdChannel);
                 text = "Channel";
+                break;
+            
+            default:
+                jassertfalse;
                 break;
         }
 

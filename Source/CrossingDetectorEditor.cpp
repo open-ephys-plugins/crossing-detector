@@ -84,7 +84,7 @@ CrossingDetectorEditor::CrossingDetectorEditor(GenericProcessor* parentNode)
     addAndMakeVisible(thresholdLabel.get());
 
     thresholdTypeButton = std::make_unique<UtilityButton>("Constant");
-    thresholdTypeButton->setFont (FontOptions (14.0f));
+    thresholdTypeButton->setFont (FontOptions("Inter", "Regular", 13.0f));
     thresholdTypeButton->addListener(this);
     thresholdTypeButton->setRadius(3.0f);
     thresholdTypeButton->setBounds(210, 45, 90, 20);

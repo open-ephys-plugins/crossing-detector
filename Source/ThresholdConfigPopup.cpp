@@ -70,7 +70,7 @@ ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_,
     chanThreshComp->setBounds(0, 0, 240, 45);
 
     chanThreshLabel = std::make_unique<Label>("Channel Label", "Reference Channel");
-    chanThreshLabel->setFont(Font("Arial", "Regular", int(0.75*22)));
+    chanThreshLabel->setFont(FontOptions("Inter", "Regular", int(0.75*22)));
     chanThreshLabel->setBounds(10, 10, 120, 25);
     chanThreshComp->addAndMakeVisible(chanThreshLabel.get());
   

@@ -36,6 +36,7 @@ CrossingDetectorCanvas::CrossingDetectorCanvas(GenericProcessor* p)
     viewport = new Viewport();
     viewport->setViewedComponent(optionsPanel, false);
     viewport->setScrollBarsShown(true, true);
+    viewport->setScrollBarThickness(12);
     addAndMakeVisible(viewport);
 }
 
@@ -47,7 +48,7 @@ void CrossingDetectorCanvas::refresh() {}
 
 void CrossingDetectorCanvas::paint(Graphics& g)
 {
-    g.fillAll (findColour (ThemeColours::componentParentBackground));
+    g.fillAll (findColour (ThemeColours::componentBackground).darker());
 }
 
 void CrossingDetectorCanvas::resized()
@@ -70,11 +71,12 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
 
     optionsPanelTitle = new Label("CDOptionsTitle", "Crossing Detector Additional Settings");
     optionsPanelTitle->setBounds(bounds = { xPos, yPos, 400, 50 });
-    optionsPanelTitle->setFont(Font("Fira Sans", "Bold", 20.0f));
+    optionsPanelTitle->setFont(FontOptions("Inter", "Bold", 20.0f));
     optionsPanel->addAndMakeVisible(optionsPanelTitle);
     opBounds = opBounds.getUnion(bounds);
 
-    Font subtitleFont("Fira Sans", "Bold", 16.0f);
+    Font subtitleFont("Inter", "Semi Bold", 18.0f);
+    Font labelFont("Inter", "Regular", 15.0f);
 
     /** ############## EVENT CRITERIA ############## */
 
@@ -91,8 +93,6 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     /* --------------- Jump limiting ------------------ */
-
-    xPos += TAB_WIDTH;
     yPos += 45;
 
     limitButton = new ToggleButton("Limit jump size across threshold (|X[k] - X[k-1]|)");
@@ -103,6 +103,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     limitLabel = new Label("LimitL", "Maximum jump size:");
+    limitLabel->setFont(labelFont);
     limitLabel->setBounds(bounds = { xPos += TAB_WIDTH, yPos += 30, 140, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(limitLabel);
     opBounds = opBounds.getUnion(bounds);
@@ -113,8 +114,9 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(limitEditable);
     opBounds = opBounds.getUnion(bounds);
 
-    xPos = LEFT_EDGE + TAB_WIDTH;
+    xPos = LEFT_EDGE;
     limitSleepLabel = new Label("LimitSL", "Sleep after artifact:");
+    limitSleepLabel->setFont(labelFont);
     limitSleepLabel->setBounds(bounds = { xPos += TAB_WIDTH, yPos += 30, 140, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(limitSleepLabel);
     opBounds = opBounds.getUnion(bounds);
@@ -129,10 +131,11 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     criteriaGroupSet->addGroup({ limitButton, limitLabel, limitEditable, limitSleepLabel, limitSleepEditable });
 
     /* --------------- Sample voting ------------------ */
-    xPos = LEFT_EDGE + TAB_WIDTH;
+    xPos = LEFT_EDGE;
     yPos += 40;
 
     votingHeader = new Label("VotingHeadL", "Sample voting:");
+    votingHeader->setFont(labelFont);
     votingHeader->setBounds(bounds = { xPos, yPos, 120, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(votingHeader);
     opBounds = opBounds.getUnion(bounds);
@@ -141,6 +144,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     yPos += 30;
 
     pastStrictLabel = new Label("PastStrictL", "Require");
+    pastStrictLabel->setFont(labelFont);
     pastStrictLabel->setBounds(bounds = { xPos, yPos, 65, C_TEXT_HT });
     pastStrictLabel->setJustificationType(Justification::centredRight);
     optionsPanel->addAndMakeVisible(pastStrictLabel);
@@ -152,6 +156,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     pastPctLabel = new Label("PastPctL", "% of the");
+    pastPctLabel->setFont(labelFont);
     pastPctLabel->setBounds(bounds = { xPos += 35, yPos, 70, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(pastPctLabel);
     opBounds = opBounds.getUnion(bounds);
@@ -162,14 +167,16 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     pastSpanLabel = new Label("PastSpanL", "samples immediately before X[k-1]...");
+    pastSpanLabel->setFont(labelFont);
     pastSpanLabel->setBounds(bounds = { xPos += 50, yPos, 260, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(pastSpanLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    xPos = LEFT_EDGE + 2 * TAB_WIDTH;
+    xPos = LEFT_EDGE + TAB_WIDTH;
     yPos += 30;
 
     futureStrictLabel = new Label("FutureStrictL", "...and");
+    futureStrictLabel->setFont(labelFont);
     futureStrictLabel->setBounds(bounds = { xPos, yPos, 65, C_TEXT_HT });
     futureStrictLabel->setJustificationType(Justification::centredRight);
     optionsPanel->addAndMakeVisible(futureStrictLabel);
@@ -181,6 +188,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     futurePctLabel = new Label("FuturePctL", "% of the");
+    futurePctLabel->setFont(labelFont);
     futurePctLabel->setBounds(bounds = { xPos += 35, yPos, 70, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(futurePctLabel);
     opBounds = opBounds.getUnion(bounds);
@@ -191,14 +199,16 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     futureSpanLabel = new Label("FutureSpanL", "samples immediately after X[k]...");
+    futureSpanLabel->setFont(labelFont);
     futureSpanLabel->setBounds(bounds = { xPos += 50, yPos, 260, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(futureSpanLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    xPos = LEFT_EDGE + 2 * TAB_WIDTH;
+    xPos = LEFT_EDGE + TAB_WIDTH + 10;
     yPos += 30;
 
     votingFooter = new Label("VotingFootL", "...to be on the correct side of the threshold.");
+    votingFooter->setFont(labelFont);
     votingFooter->setBounds(bounds = { xPos, yPos, 350, C_TEXT_HT });
     optionsPanel->addAndMakeVisible(votingFooter);
     opBounds = opBounds.getUnion(bounds);
@@ -212,7 +222,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
 
 
     /* --------------- Buffer end mask ----------------- */
-    xPos = LEFT_EDGE + TAB_WIDTH;
+    xPos = LEFT_EDGE;
     yPos += 40;
 
     static const String bufferMaskTT =
@@ -237,6 +247,7 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     opBounds = opBounds.getUnion(bounds);
 
     bufferMaskLabel = new Label("BufMaskL", "ms before the end of a buffer.");
+    bufferMaskLabel->setFont(labelFont);
     bufferMaskLabel->setBounds(bounds = { xPos += 45, yPos, 250, C_TEXT_HT });
     bufferMaskLabel->setTooltip(bufferMaskTT);
     optionsPanel->addAndMakeVisible(bufferMaskLabel);
@@ -362,15 +373,6 @@ Label* CrossingDetectorCanvas::createEditable(const String& name, const String& 
         editable->setTooltip(tooltip);
     }
     return editable;
-}
-
-Label* CrossingDetectorCanvas::createLabel(const String& name, const String& text,
-    juce::Rectangle<int> bounds)
-{
-    Label* label = new Label(name, text);
-    label->setBounds(bounds);
-    label->setFont(Font("Small Text", 12, Font::plain));
-    return label;
 }
 
 /* Attempts to parse the current text of a label as an int between min and max inclusive.

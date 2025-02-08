@@ -98,7 +98,6 @@ private:
     // but may specify a different Component in which to actually display the element.
     Label* createEditable(const String& name, const String& initialValue,
         const String& tooltip, juce::Rectangle<int> bounds);
-    Label* createLabel(const String& name, const String& text, juce::Rectangle<int> bounds);
 
     /* Utilities for parsing entered values
     *  Ouput whether the label contained a valid input; if so, it is stored in *out

@@ -51,13 +51,13 @@ public:
     ~CustomButton() { }
 
     /** Responds to button clicks*/
-    void buttonClicked(Button* label);
+    void buttonClicked(Button* label) override;
 
     /** Ensures button state aligns with underlying parameter*/
-    virtual void updateView() override;
+    void updateView() override;
 
     /** Sets component layout*/
-    virtual void resized();
+    void resized() override;
     
 private:
     

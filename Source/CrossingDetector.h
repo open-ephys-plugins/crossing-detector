@@ -84,7 +84,7 @@ public:
 };
 
 
-enum ThresholdType { CONSTANT = 0, RANDOM, CHANNEL, NUM_THRESHOLDS };
+enum ThresholdType { CONSTANT = 0, RANDOM, CHANNEL};
 
 class CrossingDetector : public GenericProcessor
 {
@@ -92,7 +92,7 @@ public:
     CrossingDetector();
     ~CrossingDetector();
 
-    bool hasEditor() const { return true; }
+    bool hasEditor() const override { return true; }
     AudioProcessorEditor* createEditor() override;
 
     void registerParameters() override;
