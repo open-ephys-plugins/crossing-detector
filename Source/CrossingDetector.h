@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CROSSING_DETECTOR_H_INCLUDED
 #define CROSSING_DETECTOR_H_INCLUDED
 
-#include <ProcessorHeaders.h>
 #include "CircularArray.h"
+#include <ProcessorHeaders.h>
 
 /*
  * The crossing detector plugin is designed to read in one continuous channel c, and generate events on one events channel
@@ -50,10 +50,10 @@ public:
     CrossingDetectorSettings();
 
     /** Destructor*/
-    ~CrossingDetectorSettings() { }
+    ~CrossingDetectorSettings() {}
 
     /** Converts parameters specified in ms to samples, and updates the corresponding member variables. */
-    void updateSampleRateDependentValues(int eventDuration, int timeout, int bufferEndMask);
+    void updateSampleRateDependentValues (int eventDuration, int timeout, int bufferEndMask);
 
     /* Crate a "turning-on" or "turning-off" event for a crossing.
      *  - bufferTs:       Timestamp of start of current buffer
@@ -62,8 +62,7 @@ public:
      *  - threshold:      Threshold at the time of the crossing
      *  - crossingLevel:  Level of signal at the first sample after the crossing
      */
-    TTLEventPtr createEvent(juce::int64 bufferTs, int crossingOffset, int bufferLength,
-        float threshold, float crossingLevel, bool eventState);
+    TTLEventPtr createEvent (juce::int64 bufferTs, int crossingOffset, int bufferLength, float threshold, float crossingLevel, bool eventState);
 
     /** Parameters */
 
@@ -72,7 +71,7 @@ public:
 
     // if using channel threshold:
     int thresholdChannel;
-    
+
     float sampleRate;
     int eventDurationSamp;
     int timeoutSamp;
@@ -83,8 +82,12 @@ public:
     TTLEventPtr turnoffEvent; // holds a turnoff event that must be added in a later buffer
 };
 
-
-enum ThresholdType { CONSTANT = 0, RANDOM, CHANNEL};
+enum ThresholdType
+{
+    CONSTANT = 0,
+    RANDOM,
+    CHANNEL
+};
 
 class CrossingDetector : public GenericProcessor
 {
@@ -99,10 +102,10 @@ public:
 
     void updateSettings() override;
 
-    void process(AudioSampleBuffer& continuousBuffer) override;
+    void process (AudioSampleBuffer& continuousBuffer) override;
 
     /** Called when a parameter is updated*/
-    void parameterValueChanged(Parameter* param) override;
+    void parameterValueChanged (Parameter* param) override;
 
     bool startAcquisition() override;
     bool stopAcquisition() override;
@@ -111,26 +114,25 @@ public:
     juce::uint16 getSelectedStream() { return selectedStreamId; }
 
     /** Set the current selected stream */
-    void setSelectedStream(juce::uint16 streamId);
+    void setSelectedStream (juce::uint16 streamId);
 
     /* Returns true if the given chanNum corresponds to an input
      * and that channel is not equal to the inputChannel.
      */
-    bool isCompatibleWithInput(int chanNum);
-    
-private:
+    bool isCompatibleWithInput (int chanNum);
 
+private:
     // ---------------------------- PRIVATE FUNCTIONS ----------------------
 
     /********** random threshold ***********/
 
     // Select a new random threshold using minThresh, maxThresh, and rng.
     float nextRandomThresh();
- 
+
     /********** channel threshold ***********/
 
     // Returns a string to display in the threshold box when using a threshold channel
-    static String toChannelThreshString(int chanNum);
+    static String toChannelThreshString (int chanNum);
 
     /*********  triggering ************/
 
@@ -138,8 +140,7 @@ private:
      * given the current pastCounter and futureCounter and the passed values and thresholds
      * surrounding the point where a crossing may be.
      */
-    bool shouldTrigger(bool direction, float preVal, float postVal, float preThresh, float postThresh);
-
+    bool shouldTrigger (bool direction, float preVal, float postVal, float preThresh, float postThresh);
 
     // ------ PARAMETERS ------------
 
@@ -186,7 +187,7 @@ private:
     // samples past the start of the current processing buffer. Less than -numNext if there is no scheduled reenable (i.e. the detector is enabled).
     int sampToReenable;
 
-     // counters for delay keeping track of voting samples
+    // counters for delay keeping track of voting samples
     int pastSamplesAbove;
     int futureSamplesAbove;
 
@@ -197,11 +198,11 @@ private:
     Array<float> currThresholds;
 
     Value thresholdVal; // underlying value of the threshold label
-    
+
     // Selected stream's ID
     juce::uint16 selectedStreamId;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetector);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CrossingDetector);
 };
 
 #endif // CROSSING_DETECTOR_H_INCLUDED

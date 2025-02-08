@@ -24,9 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CROSSING_DETECTOR_EDITOR_H_INCLUDED
 #define CROSSING_DETECTOR_EDITOR_H_INCLUDED
 
-#include <VisualizerEditorHeaders.h>
 #include "CrossingDetector.h"
 #include "ThresholdConfigPopup.h"
+#include <VisualizerEditorHeaders.h>
 
 /*
 Editor (in signal chain) contains:
@@ -45,40 +45,38 @@ class CustomButton
 {
 public:
     /** Constructor*/
-    CustomButton(Parameter* param, String label);
+    CustomButton (Parameter* param, String label);
 
     /** Destructor */
-    ~CustomButton() { }
+    ~CustomButton() {}
 
     /** Responds to button clicks*/
-    void buttonClicked(Button* label) override;
+    void buttonClicked (Button* label) override;
 
     /** Ensures button state aligns with underlying parameter*/
     void updateView() override;
 
     /** Sets component layout*/
     void resized() override;
-    
+
 private:
-    
     std::unique_ptr<UtilityButton> button;
-    
 };
 
-class CrossingDetectorEditor 
-    : public VisualizerEditor
-    , public Button::Listener
+class CrossingDetectorEditor
+    : public VisualizerEditor,
+      public Button::Listener
 {
 public:
-    CrossingDetectorEditor(GenericProcessor* parentNode);
+    CrossingDetectorEditor (GenericProcessor* parentNode);
     ~CrossingDetectorEditor();
 
     Visualizer* createNewCanvas() override;
 
     /** Called when threshold type button is clicked */
-    void buttonClicked(Button* button) override;
+    void buttonClicked (Button* button) override;
 
-    void updateThresholdButtonText(const String& btnText);
+    void updateThresholdButtonText (const String& btnText);
 
     void selectedStreamHasChanged() override;
 
@@ -87,8 +85,8 @@ private:
     std::unique_ptr<Label> thresholdLabel;
 
     ThresholdConfigComponent* thresholdConfig;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetectorEditor);
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CrossingDetectorEditor);
 };
 
 #endif // CROSSING_DETECTOR_EDITOR_H_INCLUDED

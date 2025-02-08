@@ -25,119 +25,117 @@
 
 #include <stdio.h>
 
-ThresholdConfigComponent::ThresholdConfigComponent(CrossingDetector* processor_, int selectedTab, int thresholdChan) 
-    : TabbedComponent(TabbedButtonBar::TabsAtTop),
-      processor(processor_)
+ThresholdConfigComponent::ThresholdConfigComponent (CrossingDetector* processor_, int selectedTab, int thresholdChan)
+    : TabbedComponent (TabbedButtonBar::TabsAtTop),
+      processor (processor_)
 {
-    setName("Threshold Type");
+    setName ("Threshold Type");
 
-    setSize(240, 75);
-    setTabBarDepth(30);
+    setSize (240, 75);
+    setTabBarDepth (30);
 
     /* Constant Threshold */
-    Component* constThreshComp = new Component("Constant Threshold Component");
-    constThreshComp->setBounds(0, 0, 240, 45);
+    Component* constThreshComp = new Component ("Constant Threshold Component");
+    constThreshComp->setBounds (0, 0, 240, 45);
 
-    TextBoxParameterEditor* threshEditor = new TextBoxParameterEditor(processor->getParameter("constant_threshold"), 22, 220);
-    threshEditor->setLayout(ParameterEditor::Layout::nameOnLeft);
-    thresholdParamEditors.add(threshEditor);
-    constThreshComp->addAndMakeVisible(threshEditor);
-    threshEditor->setTopLeftPosition(10, 10);
-    addTab("Constant", findColour(ThemeColours::componentBackground), constThreshComp, true);
-    
+    TextBoxParameterEditor* threshEditor = new TextBoxParameterEditor (processor->getParameter ("constant_threshold"), 22, 220);
+    threshEditor->setLayout (ParameterEditor::Layout::nameOnLeft);
+    thresholdParamEditors.add (threshEditor);
+    constThreshComp->addAndMakeVisible (threshEditor);
+    threshEditor->setTopLeftPosition (10, 10);
+    addTab ("Constant", findColour (ThemeColours::componentBackground), constThreshComp, true);
 
     /* Random Threshold */
-    Component* randomThresh = new Component("Random Threshold");
-    randomThresh->setBounds(0, 0, 240, 90);
+    Component* randomThresh = new Component ("Random Threshold");
+    randomThresh->setBounds (0, 0, 240, 90);
 
-    TextBoxParameterEditor* minRandEditor = new TextBoxParameterEditor(processor->getParameter("min_random_threshold"), 22, 220);
-    minRandEditor->setLayout(ParameterEditor::Layout::nameOnLeft);
-    thresholdParamEditors.add(minRandEditor);
+    TextBoxParameterEditor* minRandEditor = new TextBoxParameterEditor (processor->getParameter ("min_random_threshold"), 22, 220);
+    minRandEditor->setLayout (ParameterEditor::Layout::nameOnLeft);
+    thresholdParamEditors.add (minRandEditor);
 
-    TextBoxParameterEditor* maxRandEditor = new TextBoxParameterEditor(processor->getParameter("max_random_threshold"), 22, 220);
-    thresholdParamEditors.add(maxRandEditor);
-    maxRandEditor->setLayout(ParameterEditor::Layout::nameOnLeft);
+    TextBoxParameterEditor* maxRandEditor = new TextBoxParameterEditor (processor->getParameter ("max_random_threshold"), 22, 220);
+    thresholdParamEditors.add (maxRandEditor);
+    maxRandEditor->setLayout (ParameterEditor::Layout::nameOnLeft);
 
-    randomThresh->addAndMakeVisible(minRandEditor);
-    minRandEditor->setTopLeftPosition(10, 10);
-    randomThresh->addAndMakeVisible(maxRandEditor);
-    maxRandEditor->setTopLeftPosition(10, 50);
+    randomThresh->addAndMakeVisible (minRandEditor);
+    minRandEditor->setTopLeftPosition (10, 10);
+    randomThresh->addAndMakeVisible (maxRandEditor);
+    maxRandEditor->setTopLeftPosition (10, 50);
 
-    addTab("Random", findColour(ThemeColours::componentBackground), randomThresh, true);
+    addTab ("Random", findColour (ThemeColours::componentBackground), randomThresh, true);
 
     /* Reference Channel Threshold */
-    Component* chanThreshComp = new Component("Channel Threshold");
-    chanThreshComp->setBounds(0, 0, 240, 45);
+    Component* chanThreshComp = new Component ("Channel Threshold");
+    chanThreshComp->setBounds (0, 0, 240, 45);
 
-    chanThreshLabel = std::make_unique<Label>("Channel Label", "Reference Channel");
-    chanThreshLabel->setFont(FontOptions("Inter", "Regular", int(0.75*22)));
-    chanThreshLabel->setBounds(10, 10, 120, 25);
-    chanThreshComp->addAndMakeVisible(chanThreshLabel.get());
-  
+    chanThreshLabel = std::make_unique<Label> ("Channel Label", "Reference Channel");
+    chanThreshLabel->setFont (FontOptions ("Inter", "Regular", int (0.75 * 22)));
+    chanThreshLabel->setBounds (10, 10, 120, 25);
+    chanThreshComp->addAndMakeVisible (chanThreshLabel.get());
+
     // update channel threshold combo box
     int numChans = 0;
     uint16 selStreamId = processor->getSelectedStream();
-    auto stream = processor->getDataStream(selStreamId);
+    auto stream = processor->getDataStream (selStreamId);
 
     numChans = stream->getChannelCount();
 
-    channelThreshBox = std::make_unique<ComboBox>("channelSelection");
-    channelThreshBox->setBounds(140, 12, 90, 22);
-    channelThreshBox->setTooltip(
+    channelThreshBox = std::make_unique<ComboBox> ("channelSelection");
+    channelThreshBox->setBounds (140, 12, 90, 22);
+    channelThreshBox->setTooltip (
         "Only channels from the same stream as the input (but not the input itself) "
         "can be selected.");
-    channelThreshBox->onChange = [this] { thresholdChannelChanged(); };
-    chanThreshComp->addAndMakeVisible(channelThreshBox.get());
-
+    channelThreshBox->onChange = [this]
+    { thresholdChannelChanged(); };
+    chanThreshComp->addAndMakeVisible (channelThreshBox.get());
 
     for (int chan = 1; chan <= numChans; ++chan)
     {
-        if(processor->isCompatibleWithInput(chan - 1))
+        if (processor->isCompatibleWithInput (chan - 1))
         {
-            String chanName =  stream->getContinuousChannels()[chan - 1]->getName();
-            channelThreshBox->addItem(chanName, chan);
+            String chanName = stream->getContinuousChannels()[chan - 1]->getName();
+            channelThreshBox->addItem (chanName, chan);
             if (thresholdChan == (chan - 1))
             {
-                channelThreshBox->setSelectedId(chan, dontSendNotification);
+                channelThreshBox->setSelectedId (chan, dontSendNotification);
             }
         }
     }
 
     if (channelThreshBox->getSelectedId() == 0 && channelThreshBox->getNumItems() > 0)
     {
-        channelThreshBox->setSelectedItemIndex(0, sendNotification);
+        channelThreshBox->setSelectedItemIndex (0, sendNotification);
     }
 
-    addTab("Channel", findColour(ThemeColours::componentBackground), chanThreshComp, true);
+    addTab ("Channel", findColour (ThemeColours::componentBackground), chanThreshComp, true);
 
-    setCurrentTabIndex(selectedTab, false);
+    setCurrentTabIndex (selectedTab, false);
 }
-
 
 ThresholdConfigComponent::~ThresholdConfigComponent()
 {
 }
 
-void ThresholdConfigComponent::currentTabChanged(int newCurrentTabIndex, const String &newCurrentTabName)
+void ThresholdConfigComponent::currentTabChanged (int newCurrentTabIndex, const String& newCurrentTabName)
 {
-    if(newCurrentTabIndex == ThresholdType::CONSTANT)
+    if (newCurrentTabIndex == ThresholdType::CONSTANT)
     {
-        setSize(240, 75);
+        setSize (240, 75);
     }
-    else if(newCurrentTabIndex == ThresholdType::RANDOM)
+    else if (newCurrentTabIndex == ThresholdType::RANDOM)
     {
-        setSize(240, 120);
+        setSize (240, 120);
     }
-    else if(newCurrentTabIndex == ThresholdType::CHANNEL)
+    else if (newCurrentTabIndex == ThresholdType::CHANNEL)
     {
-        setSize(240, 75);
+        setSize (240, 75);
     }
 
-    processor->getParameter("threshold_type")->setNextValue(newCurrentTabIndex);
+    processor->getParameter ("threshold_type")->setNextValue (newCurrentTabIndex);
 }
 
 void ThresholdConfigComponent::thresholdChannelChanged()
 {
-    auto currStream = processor->getDataStream(processor->getSelectedStream());
-    currStream->getParameter("threshold_chan")->setNextValue(channelThreshBox->getSelectedId() - 1);
+    auto currStream = processor->getDataStream (processor->getSelectedStream());
+    currStream->getParameter ("threshold_chan")->setNextValue (channelThreshBox->getSelectedId() - 1);
 }

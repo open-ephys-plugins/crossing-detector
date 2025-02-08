@@ -36,14 +36,14 @@ class CircularArray
 {
 public:
     /** Creates an empty circular array. */
-    CircularArray() noexcept : start(0), isReset(true) {}
+    CircularArray() noexcept : start (0), isReset (true) {}
 
     /** Creates a circular array with a given length filled with default values 
         @param length   length of new array (if negative, new array is empty)
     */
-    CircularArray(int length) : start(0), isReset(true)
+    CircularArray (int length) : start (0), isReset (true)
     {
-        array.resize(jmax(0, length));
+        array.resize (jmax (0, length));
     }
 
     ~CircularArray() {}
@@ -53,7 +53,7 @@ public:
     {
         int length = size();
         array.clearQuick();
-        array.insertMultiple(0, ElementType(), length);
+        array.insertMultiple (0, ElementType(), length);
         start = 0;
         isReset = true;
     }
@@ -75,9 +75,9 @@ public:
     /** Changes the size of the array by adding empty elements to or removing from the end
         @param targetNumItems   new array size
     */
-    void resize(const int targetNumItems)
+    void resize (const int targetNumItems)
     {
-        jassert(targetNumItems >= 0);
+        jassert (targetNumItems >= 0);
         int length = size();
         if (targetNumItems == 0)
         {
@@ -85,11 +85,11 @@ public:
         }
         else if (targetNumItems > length)
         {
-            insertMultiple(length, ElementType(), targetNumItems - length);
+            insertMultiple (length, ElementType(), targetNumItems - length);
         }
         else // 0 < targetNumItems <= length
         {
-            removeLast(length - targetNumItems);
+            removeLast (length - targetNumItems);
         }
     }
 
@@ -97,9 +97,9 @@ public:
         @param index    circular index of requested element
         @return         requested element, or default value if array is empty
     */
-    ElementType operator[](const int index) const
+    ElementType operator[] (const int index) const
     {
-        return size() > 0 ? array[circToLinInd(index)] : ElementType();
+        return size() > 0 ? array[circToLinInd (index)] : ElementType();
     }
 
     /** Replaces an element with a new value.
@@ -108,11 +108,11 @@ public:
         @param indexToChange    index of element to replace
         @param newValue         element to replace it with
     */
-    void set(const int indexToChange, ElementType newValue)
+    void set (const int indexToChange, ElementType newValue)
     {
         if (size() > 0)
         {
-            array.set(circToLinInd(indexToChange), newValue);
+            array.set (circToLinInd (indexToChange), newValue);
             if (newValue != ElementType())
             {
                 isReset = false;
@@ -124,10 +124,10 @@ public:
         Does not change the array size and does nothing if the array is empty.
         @param newElement      new element to enqueue
     */
-    void enqueue(ElementType newValue)
+    void enqueue (ElementType newValue)
     {
-        set(0, newValue);
-        start = mod(start + 1, size());
+        set (0, newValue);
+        start = mod (start + 1, size());
         isReset = false;
     }
 
@@ -136,25 +136,25 @@ public:
         @param newValues            start of array to add
         @param numberOfElements     size of array to add
     */
-    void enqueueArray(const ElementType* newValues, int numberOfElements)
+    void enqueueArray (const ElementType* newValues, int numberOfElements)
     {
         int length = size();
-        int n = jmin(numberOfElements, length);
+        int n = jmin (numberOfElements, length);
         int nToSkip = numberOfElements - n;
-        int nFirstSegment = jmin(n, length - start);
+        int nFirstSegment = jmin (n, length - start);
         int nSecondSegment = n - nFirstSegment;
 
         for (int i = 0; i < nFirstSegment; ++i)
         {
-            array.set(start + i, newValues[nToSkip + i]);
+            array.set (start + i, newValues[nToSkip + i]);
         }
 
         for (int i = 0; i < nSecondSegment; ++i)
         {
-            array.set(i, newValues[nToSkip + nFirstSegment + i]);
+            array.set (i, newValues[nToSkip + nFirstSegment + i]);
         }
 
-        start = mod(start + n, length);
+        start = mod (start + n, length);
         isReset = false;
     }
 
@@ -165,7 +165,7 @@ public:
         @param newElement           the new object to add to the array
         @numberOfTimesToInsertIt    how many copies of the value to insert
     */
-    void insertMultiple(int indexToInsertAt, ElementType newElement, int numberOfTimesToInsertIt)
+    void insertMultiple (int indexToInsertAt, ElementType newElement, int numberOfTimesToInsertIt)
     {
         if (numberOfTimesToInsertIt > 0)
         {
@@ -186,14 +186,14 @@ public:
                 }
 
                 // get index to insert at in range [1, length]
-                linIndexToInsertAt = circToLinInd(indexToInsertAt - 1) + 1;
+                linIndexToInsertAt = circToLinInd (indexToInsertAt - 1) + 1;
             }
             else
             {
                 linIndexToInsertAt = 0;
             }
 
-            array.insertMultiple(linIndexToInsertAt, newElement, numberOfTimesToInsertIt);
+            array.insertMultiple (linIndexToInsertAt, newElement, numberOfTimesToInsertIt);
 
             // move start to follow first element if it was moved and we're not inserting at 0
             if (linIndexToInsertAt <= start && indexToInsertAt > 0)
@@ -217,7 +217,7 @@ public:
     /** Removes the last n elements from the array.
         @param howManyToRemove  how many elements to remove
     */
-    void removeLast(int howManyToRemove = 1)
+    void removeLast (int howManyToRemove = 1)
     {
         if (howManyToRemove > 0)
         {
@@ -233,31 +233,31 @@ public:
             if (isReset)
             {
                 start = 0;
-                array.removeLast(howManyToRemove);
+                array.removeLast (howManyToRemove);
                 return;
             }
 
             // howManyToRemove < length and we can't move start.
 
-            int numRemoveFromStart = jmin(start, howManyToRemove);
+            int numRemoveFromStart = jmin (start, howManyToRemove);
             int numRemoveFromEnd = howManyToRemove - numRemoveFromStart;
 
-            array.removeLast(numRemoveFromEnd);
-            array.removeRange(start - numRemoveFromStart, numRemoveFromStart);
+            array.removeLast (numRemoveFromEnd);
+            array.removeRange (start - numRemoveFromStart, numRemoveFromStart);
             start -= numRemoveFromStart;
         }
     }
 
 private:
     // precondition: array is nonempty.
-    int circToLinInd(int index) const
+    int circToLinInd (int index) const
     {
-        return mod(start + index, size());
+        return mod (start + index, size());
     }
 
-    static int mod(int x, int m)
+    static int mod (int x, int m)
     {
-        jassert(m > 0);
+        jassert (m > 0);
         return (x % m + m) % m;
     }
 

@@ -24,9 +24,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef CROSSING_DETECTOR_CANVAS_H_INCLUDED
 #define CROSSING_DETECTOR_CANVAS_H_INCLUDED
 
-#include <VisualizerWindowHeaders.h>
-#include "CrossingDetectorEditor.h"
 #include "CrossingDetector.h"
+#include "CrossingDetectorEditor.h"
+#include <VisualizerWindowHeaders.h>
 
 /*
 Canvas/visualizer contains:
@@ -38,7 +38,6 @@ Canvas/visualizer contains:
 @see Visualizer
 */
 
-
 /* Renders a rounded rectangular component behind and encompassing each group of
  * components added, with matching widths. Components of each group are not added
  * as children to the groupset or backgrounds; they are just used to position the backgrounds.
@@ -47,15 +46,15 @@ Canvas/visualizer contains:
 class VerticalGroupSet : public Component
 {
 public:
-    VerticalGroupSet(Colour backgroundColor = Colours::silver);
-    VerticalGroupSet(const String& componentName, Colour backgroundColor = Colours::silver);
+    VerticalGroupSet (Colour backgroundColor = Colours::silver);
+    VerticalGroupSet (const String& componentName, Colour backgroundColor = Colours::silver);
     ~VerticalGroupSet();
 
-    void paint(Graphics& g) override;
+    void paint (Graphics& g) override;
 
-    void addGroup(std::initializer_list<Component*> components);
+    void addGroup (std::initializer_list<Component*> components);
 
-    void setBackgroundColour(Colour newColour);
+    void setBackgroundColour (Colour newColour);
 
 private:
     Colour bgColor;
@@ -73,7 +72,7 @@ class CrossingDetectorCanvas : public Visualizer,
                                public Button::Listener
 {
 public:
-    CrossingDetectorCanvas(GenericProcessor* n);
+    CrossingDetectorCanvas (GenericProcessor* n);
     ~CrossingDetectorCanvas();
 
     void refreshState() override;
@@ -82,34 +81,30 @@ public:
     // void beginAnimation() override;
     // void endAnimation() override;
 
-    void paint(Graphics& g) override;
+    void paint (Graphics& g) override;
     void resized() override;
 
-    void labelTextChanged(Label* labelThatHasChanged) override;
-    void buttonClicked(Button* button) override;
+    void labelTextChanged (Label* labelThatHasChanged) override;
+    void buttonClicked (Button* button) override;
 
 private:
     ScopedPointer<Viewport> viewport;
-    
+
     CrossingDetector* processor;
     CrossingDetectorEditor* editor;
 
     // Basic UI element creation methods. Always register "this" (the editor) as the listener,
     // but may specify a different Component in which to actually display the element.
-    Label* createEditable(const String& name, const String& initialValue,
-        const String& tooltip, juce::Rectangle<int> bounds);
+    Label* createEditable (const String& name, const String& initialValue, const String& tooltip, juce::Rectangle<int> bounds);
 
     /* Utilities for parsing entered values
     *  Ouput whether the label contained a valid input; if so, it is stored in *out
     *  and the label is updated with the parsed input. Otherwise, the label is reset
     *  to defaultValue.
     */
-    
-    static bool updateIntLabel(Label* label, int min, int max,
-        int defaultValue, int* out);
-    static bool updateFloatLabel(Label* label, float min, float max,
-        float defaultValue, float* out);
-    
+
+    static bool updateIntLabel (Label* label, int min, int max, int defaultValue, int* out);
+    static bool updateFloatLabel (Label* label, float min, float max, float defaultValue, float* out);
 
     void initializeOptionsPanel();
 
@@ -132,7 +127,7 @@ private:
 
     // sample voting
     ScopedPointer<Label> votingHeader;
-    
+
     ScopedPointer<Label> pastStrictLabel;
     ScopedPointer<Label> pastPctEditable;
     ScopedPointer<Label> pastPctLabel;
@@ -152,7 +147,7 @@ private:
     ScopedPointer<Label> bufferMaskEditable;
     ScopedPointer<Label> bufferMaskLabel;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CrossingDetectorCanvas);
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CrossingDetectorCanvas);
 };
 
 #endif // CROSSING_DETECTOR_CANVAS_H_INCLUDED
