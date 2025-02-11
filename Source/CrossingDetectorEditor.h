@@ -84,7 +84,7 @@ private:
     std::unique_ptr<UtilityButton> thresholdTypeButton;
     std::unique_ptr<Label> thresholdLabel;
 
-    ThresholdConfigComponent* thresholdConfig;
+    ThresholdConfigPopup* thresholdConfig;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CrossingDetectorEditor);
 };

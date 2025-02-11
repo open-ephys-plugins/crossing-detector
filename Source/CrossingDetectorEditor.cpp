@@ -115,13 +115,9 @@ void CrossingDetectorEditor::buttonClicked (Button* button)
 
         int thresholdChan = (int) processor->getDataStream (getCurrentStream())->getParameter ("threshold_chan")->getValue();
 
-        thresholdConfig = new ThresholdConfigComponent (processor, selectedThreshold, thresholdChan);
+        thresholdConfig = new ThresholdConfigPopup (button, processor, selectedThreshold, thresholdChan);
 
-        CallOutBox& myBox = CallOutBox::launchAsynchronously (std::unique_ptr<Component> (thresholdConfig),
-                                                              button->getScreenBounds(),
-                                                              nullptr);
-
-        myBox.setDismissalMouseClicksAreAlwaysConsumed (true);
+        CoreServices::getPopupManager()->showPopup (std::unique_ptr<PopupComponent> (thresholdConfig), button);
 
         return;
     }

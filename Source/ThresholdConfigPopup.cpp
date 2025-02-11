@@ -25,7 +25,27 @@
 
 #include <stdio.h>
 
-ThresholdConfigComponent::ThresholdConfigComponent (CrossingDetector* processor_, int selectedTab, int thresholdChan)
+ThresholdConfigPopup::ThresholdConfigPopup (Component* parent, CrossingDetector* processor, int selectedTab, int thresholdChan)
+    : PopupComponent (parent),
+      parentComponent (parent),
+      processor (processor)
+{
+    setName ("Threshold Configuration");
+
+    thresholdTabbedComponent = std::make_unique<ThresholdTabbedComponent> (processor, selectedTab, thresholdChan);
+    thresholdTabbedComponent->setBounds (0, 0, thresholdTabbedComponent->getWidth(), thresholdTabbedComponent->getHeight());
+    addAndMakeVisible (thresholdTabbedComponent.get());
+
+    setSize (thresholdTabbedComponent->getWidth(), thresholdTabbedComponent->getHeight());
+}
+
+void ThresholdConfigPopup::updatePopup()
+{
+    int selectedThreshold = (int) processor->getParameter ("threshold_type")->getValue();
+    thresholdTabbedComponent->setCurrentTabIndex (selectedThreshold, true);
+}
+
+ThresholdTabbedComponent::ThresholdTabbedComponent (CrossingDetector* processor_, int selectedTab, int thresholdChan)
     : TabbedComponent (TabbedButtonBar::TabsAtTop),
       processor (processor_)
 {
@@ -104,7 +124,9 @@ ThresholdConfigComponent::ThresholdConfigComponent (CrossingDetector* processor_
 
     if (channelThreshBox->getSelectedId() == 0 && channelThreshBox->getNumItems() > 0)
     {
-        channelThreshBox->setSelectedItemIndex (0, sendNotification);
+        channelThreshBox->setSelectedItemIndex (0, dontSendNotification);
+        auto currStream = processor->getDataStream (processor->getSelectedStream());
+        currStream->getParameter ("threshold_chan")->setNextValue (channelThreshBox->getSelectedId() - 1, false);
     }
 
     addTab ("Channel", findColour (ThemeColours::componentBackground), chanThreshComp, true);
@@ -112,11 +134,11 @@ ThresholdConfigComponent::ThresholdConfigComponent (CrossingDetector* processor_
     setCurrentTabIndex (selectedTab, false);
 }
 
-ThresholdConfigComponent::~ThresholdConfigComponent()
+ThresholdTabbedComponent::~ThresholdTabbedComponent()
 {
 }
 
-void ThresholdConfigComponent::currentTabChanged (int newCurrentTabIndex, const String& newCurrentTabName)
+void ThresholdTabbedComponent::currentTabChanged (int newCurrentTabIndex, const String& newCurrentTabName)
 {
     if (newCurrentTabIndex == ThresholdType::CONSTANT)
     {
@@ -132,9 +154,12 @@ void ThresholdConfigComponent::currentTabChanged (int newCurrentTabIndex, const 
     }
 
     processor->getParameter ("threshold_type")->setNextValue (newCurrentTabIndex);
+
+    if (auto* parent = getParentComponent())
+        parent->setSize (getWidth(), getHeight());
 }
 
-void ThresholdConfigComponent::thresholdChannelChanged()
+void ThresholdTabbedComponent::thresholdChannelChanged()
 {
     auto currStream = processor->getDataStream (processor->getSelectedStream());
     currStream->getParameter ("threshold_chan")->setNextValue (channelThreshBox->getSelectedId() - 1);

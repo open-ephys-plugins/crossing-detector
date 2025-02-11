@@ -29,16 +29,16 @@
 class CrossingDetectorEditor;
 
 /**
-*   Popup window used to edit Spike Channel settings
+*   Tabbed Component used to edit Threshold settings
 */
-class ThresholdConfigComponent : public TabbedComponent
+class ThresholdTabbedComponent : public TabbedComponent
 {
 public:
     /** Constructor */
-    ThresholdConfigComponent (CrossingDetector* processor, int selectedTab, int thresholdChan = -1);
+    ThresholdTabbedComponent (CrossingDetector* processor, int selectedTab, int thresholdChan = -1);
 
     /** Destructor */
-    ~ThresholdConfigComponent();
+    ~ThresholdTabbedComponent();
 
     void currentTabChanged (int newCurrentTabIndex, const String& newCurrentTabName) override;
 
@@ -53,6 +53,27 @@ private:
     std::unique_ptr<ComboBox> channelThreshBox;
 
     std::unique_ptr<ToggleButton> enabledButton;
+};
+
+/**
+ * Popup window used to hold the ThresholdTabbedComponent
+ */
+
+class ThresholdConfigPopup : public PopupComponent
+{
+public:
+    /** Constructor */
+    ThresholdConfigPopup (Component* parent, CrossingDetector* processor, int selectedThreshold, int thresholdChan);
+
+    /** Destructor */
+    ~ThresholdConfigPopup() {}
+
+    void updatePopup() override;
+
+private:
+    std::unique_ptr<ThresholdTabbedComponent> thresholdTabbedComponent;
+    CrossingDetector* processor;
+    Component* parentComponent;
 };
 
 #endif // __THRESHOLDCONFIGPOPUP_H_A76FFF40__
