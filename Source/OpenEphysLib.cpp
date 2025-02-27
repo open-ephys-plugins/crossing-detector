@@ -38,7 +38,7 @@ extern "C" EXPORT void getLibInfo(Plugin::LibraryInfo* info)
 {
     info->apiVersion = PLUGIN_API_VER;
     info->name = "Crossing Detector";
-    info->libVersion = "0.2.1";
+    info->libVersion = "0.2.2";
     info->numPlugins = NUM_PLUGINS;
 }
 
