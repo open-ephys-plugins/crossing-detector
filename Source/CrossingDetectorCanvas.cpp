@@ -236,7 +236,6 @@ void CrossingDetectorCanvas::initializeOptionsPanel()
     optionsPanel->addAndMakeVisible(limitSleepLabel);
     opBounds = opBounds.getUnion(bounds);
 
-    auto currStream = processor->getDataStream(processor->getSelectedStream());
     limitSleepEditable = createEditable("LimitSE", String((float)processor->getParameter("jump_limit_sleep")->getValue()), "",
         bounds = { xPos += 150, yPos, 50, C_TEXT_HT });
     limitSleepEditable->setEnabled(limitButton->getToggleState());
