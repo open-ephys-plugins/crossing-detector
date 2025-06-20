@@ -452,7 +452,7 @@ void CrossingDetector::parameterValueChanged (Parameter* param)
     }
     else if (param->getName().equalsIgnoreCase ("ttl_out"))
     {
-        settings[param->getStreamId()]->eventChannel = (int) param->getValue() - 1;
+        settings[param->getStreamId()]->eventChannel = (int) param->getValue();
     }
     else if (param->getName().equalsIgnoreCase ("rising"))
     {
